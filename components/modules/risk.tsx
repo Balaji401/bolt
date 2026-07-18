@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Calculator, DollarSign, Percent, Scale, TrendingUp, Coins, Activity, Layers } from 'lucide-react';
+import { Calculator, DollarSign, Percent, Scale, TrendingUp, Coins, Activity, Layers, Info } from 'lucide-react';
 import { fmtCurrency, fmtNum } from '@/lib/format';
+import { INSTRUMENT_LIST, getSpec, pipDistance, pipValuePerLot } from '@/lib/instruments';
 import { cn } from '@/lib/utils';
 
 type CalcKey = 'position' | 'risk' | 'lot' | 'margin' | 'drawdown' | 'profit' | 'compound' | 'pip' | 'rr';
@@ -101,91 +102,144 @@ function Field({ label, children, hint }: { label: string; children: React.React
   );
 }
 
+function InstrumentSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const spec = getSpec(value);
+  return (
+    <Field label="Instrument" hint={`${spec.name} • Contract: ${spec.contractSize.toLocaleString()} units/lot • Pip: ${spec.pipSize} • ${spec.category}`}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="input">
+        {INSTRUMENT_LIST.map((i) => (
+          <option key={i.symbol} value={i.symbol}>{i.symbol} — {i.name}</option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+function InstrumentInfo({ symbol }: { symbol: string }) {
+  const spec = getSpec(symbol);
+  return (
+    <div className="flex items-start gap-2 p-3 rounded-lg bg-secondary/40 border border-border text-xs text-muted-foreground">
+      <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
+      <div>
+        <span className="font-medium text-foreground">{spec.symbol}</span> ({spec.category}) —
+        Contract size <span className="font-medium text-foreground">{spec.contractSize.toLocaleString()}</span> units per lot,
+        pip size <span className="font-medium text-foreground">{spec.pipSize}</span>,
+        min lot <span className="font-medium text-foreground">{spec.minLot}</span>,
+        quote currency <span className="font-medium text-foreground">{spec.quoteCurrency}</span>.
+      </div>
+    </div>
+  );
+}
+
 function PositionCalc() {
+  const [symbol, setSymbol] = useState('EURUSD');
   const [balance, setBalance] = useState('10000');
   const [riskPct, setRiskPct] = useState('1');
   const [entry, setEntry] = useState('1.0850');
   const [stop, setStop] = useState('1.0800');
-  const [pipValue, setPipValue] = useState('10');
+  const spec = getSpec(symbol);
   const risk = (Number(balance) * Number(riskPct)) / 100;
-  const stopPips = Math.abs(Number(entry) - Number(stop)) * 10000;
-  const lots = stopPips > 0 ? risk / (stopPips * Number(pipValue)) : 0;
+  const stopPips = pipDistance(symbol, Number(entry), Number(stop));
+  const pipVal = pipValuePerLot(symbol);
+  const lots = stopPips > 0 ? risk / (stopPips * pipVal) : 0;
+  const units = lots * spec.contractSize;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <Field label="Account Balance ($)"><input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} className="input" /></Field>
-        <Field label="Risk per Trade (%)"><input type="number" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="input" /></Field>
-        <Field label="Entry Price"><input type="number" value={entry} onChange={(e) => setEntry(e.target.value)} className="input" /></Field>
-        <Field label="Stop Loss Price"><input type="number" value={stop} onChange={(e) => setStop(e.target.value)} className="input" /></Field>
-        <Field label="Pip Value ($/pip per lot)"><input type="number" value={pipValue} onChange={(e) => setPipValue(e.target.value)} className="input" /></Field>
-      </div>
-      <div className="space-y-3">
-        <ResultCard label="Position Size" value={fmtNum(lots, 2) + ' lots'} sub={`${fmtNum(lots * 100000, 0)} units`} tone="primary" />
-        <ResultCard label="Risk Amount" value={fmtCurrency(risk)} sub={`${riskPct}% of ${fmtCurrency(Number(balance))}`} tone="warning" />
-        <ResultCard label="Stop Distance" value={fmtNum(stopPips, 0) + ' pips'} sub={`$${fmtNum(stopPips * Number(pipValue) * lots, 2)} per lot`} tone="success" />
+    <div className="space-y-4">
+      <InstrumentInfo symbol={symbol} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <InstrumentSelect value={symbol} onChange={setSymbol} />
+          <Field label="Account Balance ($)"><input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} className="input" /></Field>
+          <Field label="Risk per Trade (%)"><input type="number" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="input" /></Field>
+          <Field label="Entry Price"><input type="number" step="0.00001" value={entry} onChange={(e) => setEntry(e.target.value)} className="input" /></Field>
+          <Field label="Stop Loss Price"><input type="number" step="0.00001" value={stop} onChange={(e) => setStop(e.target.value)} className="input" /></Field>
+        </div>
+        <div className="space-y-3">
+          <ResultCard label="Position Size" value={fmtNum(lots, 2) + ' lots'} sub={`${fmtNum(units, 0)} units • ${fmtNum(lots * 100, 0)} micro lots`} tone="primary" />
+          <ResultCard label="Risk Amount" value={fmtCurrency(risk)} sub={`${riskPct}% of ${fmtCurrency(Number(balance))}`} tone="warning" />
+          <ResultCard label="Stop Distance" value={fmtNum(stopPips, 0) + ' pips'} sub={`${fmtCurrency(stopPips * pipVal * lots)} total risk`} tone="success" />
+        </div>
       </div>
     </div>
   );
 }
 
 function RiskCalc() {
+  const [symbol, setSymbol] = useState('EURUSD');
   const [balance, setBalance] = useState('10000');
   const [riskPct, setRiskPct] = useState('2');
   const [entry, setEntry] = useState('1.0850');
   const [stop, setStop] = useState('1.0820');
   const risk = (Number(balance) * Number(riskPct)) / 100;
-  const stopPips = Math.abs(Number(entry) - Number(stop)) * 10000;
+  const stopPips = pipDistance(symbol, Number(entry), Number(stop));
+  const pipVal = pipValuePerLot(symbol);
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <Field label="Account Balance ($)"><input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} className="input" /></Field>
-        <Field label="Risk per Trade (%)"><input type="number" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="input" /></Field>
-        <Field label="Entry Price"><input type="number" value={entry} onChange={(e) => setEntry(e.target.value)} className="input" /></Field>
-        <Field label="Stop Loss Price"><input type="number" value={stop} onChange={(e) => setStop(e.target.value)} className="input" /></Field>
-      </div>
-      <div className="space-y-3">
-        <ResultCard label="Risk Amount" value={fmtCurrency(risk)} tone="warning" />
-        <ResultCard label="Stop Distance" value={fmtNum(stopPips, 0) + ' pips'} tone="primary" />
-        <ResultCard label="Risk %" value={riskPct + '%'} sub={`of ${fmtCurrency(Number(balance))}`} tone="success" />
+    <div className="space-y-4">
+      <InstrumentInfo symbol={symbol} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <InstrumentSelect value={symbol} onChange={setSymbol} />
+          <Field label="Account Balance ($)"><input type="number" value={balance} onChange={(e) => setBalance(e.target.value)} className="input" /></Field>
+          <Field label="Risk per Trade (%)"><input type="number" value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="input" /></Field>
+          <Field label="Entry Price"><input type="number" step="0.00001" value={entry} onChange={(e) => setEntry(e.target.value)} className="input" /></Field>
+          <Field label="Stop Loss Price"><input type="number" step="0.00001" value={stop} onChange={(e) => setStop(e.target.value)} className="input" /></Field>
+        </div>
+        <div className="space-y-3">
+          <ResultCard label="Risk Amount" value={fmtCurrency(risk)} tone="warning" />
+          <ResultCard label="Stop Distance" value={fmtNum(stopPips, 0) + ' pips'} tone="primary" />
+          <ResultCard label="Pip Value" value={fmtCurrency(pipVal)} sub={`Per lot of ${symbol}`} tone="success" />
+        </div>
       </div>
     </div>
   );
 }
 
 function LotCalc() {
+  const [symbol, setSymbol] = useState('EURUSD');
   const [lots, setLots] = useState('1');
-  const units = Number(lots) * 100000;
+  const spec = getSpec(symbol);
+  const units = Number(lots) * spec.contractSize;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <Field label="Lot Size"><input type="number" value={lots} onChange={(e) => setLots(e.target.value)} className="input" /></Field>
-      </div>
-      <div className="space-y-3">
-        <ResultCard label="Units" value={fmtNum(units, 0)} sub="Standard lot = 100,000 units" tone="primary" />
-        <ResultCard label="Mini Lots" value={fmtNum(Number(lots) * 10, 1)} sub="10,000 units each" tone="success" />
-        <ResultCard label="Micro Lots" value={fmtNum(Number(lots) * 100, 0)} sub="1,000 units each" tone="warning" />
+    <div className="space-y-4">
+      <InstrumentInfo symbol={symbol} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <InstrumentSelect value={symbol} onChange={setSymbol} />
+          <Field label="Lot Size"><input type="number" value={lots} onChange={(e) => setLots(e.target.value)} className="input" /></Field>
+        </div>
+        <div className="space-y-3">
+          <ResultCard label="Units" value={fmtNum(units, 0)} sub={`1 lot = ${spec.contractSize.toLocaleString()} units`} tone="primary" />
+          <ResultCard label="Mini Lots" value={fmtNum(Number(lots) * 10, 1)} sub="10,000 units each" tone="success" />
+          <ResultCard label="Micro Lots" value={fmtNum(Number(lots) * 100, 0)} sub="1,000 units each" tone="warning" />
+        </div>
       </div>
     </div>
   );
 }
 
 function MarginCalc() {
+  const [symbol, setSymbol] = useState('EURUSD');
   const [lots, setLots] = useState('1');
   const [price, setPrice] = useState('1.0850');
   const [leverage, setLeverage] = useState('30');
-  const notional = Number(lots) * 100000 * Number(price);
+  const spec = getSpec(symbol);
+  const notional = Number(lots) * spec.contractSize * Number(price);
   const margin = notional / Number(leverage);
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <Field label="Lot Size"><input type="number" value={lots} onChange={(e) => setLots(e.target.value)} className="input" /></Field>
-        <Field label="Current Price"><input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="input" /></Field>
-        <Field label="Leverage (1:x)"><input type="number" value={leverage} onChange={(e) => setLeverage(e.target.value)} className="input" /></Field>
-      </div>
-      <div className="space-y-3">
-        <ResultCard label="Required Margin" value={fmtCurrency(margin)} tone="warning" />
-        <ResultCard label="Notional Value" value={fmtCurrency(notional)} tone="primary" />
-        <ResultCard label="Leverage Used" value={`1:${leverage}`} tone="success" />
+    <div className="space-y-4">
+      <InstrumentInfo symbol={symbol} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <InstrumentSelect value={symbol} onChange={setSymbol} />
+          <Field label="Lot Size"><input type="number" value={lots} onChange={(e) => setLots(e.target.value)} className="input" /></Field>
+          <Field label="Current Price"><input type="number" step="0.00001" value={price} onChange={(e) => setPrice(e.target.value)} className="input" /></Field>
+          <Field label="Leverage (1:x)"><input type="number" value={leverage} onChange={(e) => setLeverage(e.target.value)} className="input" /></Field>
+        </div>
+        <div className="space-y-3">
+          <ResultCard label="Required Margin" value={fmtCurrency(margin)} tone="warning" />
+          <ResultCard label="Notional Value" value={fmtCurrency(notional)} tone="primary" />
+          <ResultCard label="Leverage Used" value={`1:${leverage}`} tone="success" />
+        </div>
       </div>
     </div>
   );
@@ -263,51 +317,53 @@ function CompoundCalc() {
 }
 
 function PipCalc() {
+  const [symbol, setSymbol] = useState('EURUSD');
   const [lots, setLots] = useState('1');
-  const [pair, setPair] = useState('EURUSD');
   const [rate, setRate] = useState('1.0850');
-  const pipValue = pair.endsWith('JPY') ? (Number(lots) * 100000 * 0.01) / Number(rate) : Number(lots) * 100000 * 0.0001;
+  const spec = getSpec(symbol);
+  const pipVal = pipValuePerLot(symbol, Number(rate)) * Number(lots);
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <Field label="Lot Size"><input type="number" value={lots} onChange={(e) => setLots(e.target.value)} className="input" /></Field>
-        <Field label="Currency Pair">
-          <select value={pair} onChange={(e) => setPair(e.target.value)} className="input">
-            <option value="EURUSD">EURUSD</option>
-            <option value="GBPUSD">GBPUSD</option>
-            <option value="USDJPY">USDJPY</option>
-            <option value="XAUUSD">XAUUSD</option>
-          </select>
-        </Field>
-        <Field label="Current Rate"><input type="number" value={rate} onChange={(e) => setRate(e.target.value)} className="input" /></Field>
-      </div>
-      <div className="space-y-3">
-        <ResultCard label="Pip Value" value={fmtCurrency(pipValue)} sub="Per pip per lot" tone="primary" />
-        <ResultCard label="Per 10 Pips" value={fmtCurrency(pipValue * 10)} tone="success" />
-        <ResultCard label="Per 50 Pips" value={fmtCurrency(pipValue * 50)} tone="warning" />
+    <div className="space-y-4">
+      <InstrumentInfo symbol={symbol} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <InstrumentSelect value={symbol} onChange={setSymbol} />
+          <Field label="Lot Size"><input type="number" value={lots} onChange={(e) => setLots(e.target.value)} className="input" /></Field>
+          <Field label="Current Rate" hint="Used for JPY-quoted cross conversions"><input type="number" step="0.00001" value={rate} onChange={(e) => setRate(e.target.value)} className="input" /></Field>
+        </div>
+        <div className="space-y-3">
+          <ResultCard label="Pip Value" value={fmtCurrency(pipVal)} sub={`Per pip for ${lots} lots`} tone="primary" />
+          <ResultCard label="Per 10 Pips" value={fmtCurrency(pipVal * 10)} tone="success" />
+          <ResultCard label="Per 50 Pips" value={fmtCurrency(pipVal * 50)} tone="warning" />
+        </div>
       </div>
     </div>
   );
 }
 
 function RrCalc() {
+  const [symbol, setSymbol] = useState('EURUSD');
   const [entry, setEntry] = useState('1.0850');
   const [stop, setStop] = useState('1.0820');
   const [target, setTarget] = useState('1.0920');
-  const risk = Math.abs(Number(entry) - Number(stop));
-  const reward = Math.abs(Number(target) - Number(entry));
-  const rr = risk > 0 ? reward / risk : 0;
+  const riskPips = pipDistance(symbol, Number(entry), Number(stop));
+  const rewardPips = pipDistance(symbol, Number(entry), Number(target));
+  const rr = riskPips > 0 ? rewardPips / riskPips : 0;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <Field label="Entry Price"><input type="number" value={entry} onChange={(e) => setEntry(e.target.value)} className="input" /></Field>
-        <Field label="Stop Loss"><input type="number" value={stop} onChange={(e) => setStop(e.target.value)} className="input" /></Field>
-        <Field label="Take Profit"><input type="number" value={target} onChange={(e) => setTarget(e.target.value)} className="input" /></Field>
-      </div>
-      <div className="space-y-3">
-        <ResultCard label="Risk : Reward" value={`1 : ${fmtNum(rr, 2)}`} sub={rr >= 2 ? 'Excellent setup' : rr >= 1 ? 'Acceptable' : 'Poor setup'} tone={rr >= 2 ? 'success' : rr >= 1 ? 'warning' : 'destructive'} />
-        <ResultCard label="Risk (pips)" value={fmtNum(risk * 10000, 0)} tone="destructive" />
-        <ResultCard label="Reward (pips)" value={fmtNum(reward * 10000, 0)} tone="success" />
+    <div className="space-y-4">
+      <InstrumentInfo symbol={symbol} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <InstrumentSelect value={symbol} onChange={setSymbol} />
+          <Field label="Entry Price"><input type="number" step="0.00001" value={entry} onChange={(e) => setEntry(e.target.value)} className="input" /></Field>
+          <Field label="Stop Loss"><input type="number" step="0.00001" value={stop} onChange={(e) => setStop(e.target.value)} className="input" /></Field>
+          <Field label="Take Profit"><input type="number" step="0.00001" value={target} onChange={(e) => setTarget(e.target.value)} className="input" /></Field>
+        </div>
+        <div className="space-y-3">
+          <ResultCard label="Risk : Reward" value={`1 : ${fmtNum(rr, 2)}`} sub={rr >= 2 ? 'Excellent setup' : rr >= 1 ? 'Acceptable' : 'Poor setup'} tone={rr >= 2 ? 'success' : rr >= 1 ? 'warning' : 'destructive'} />
+          <ResultCard label="Risk (pips)" value={fmtNum(riskPips, 0)} tone="destructive" />
+          <ResultCard label="Reward (pips)" value={fmtNum(rewardPips, 0)} tone="success" />
+        </div>
       </div>
     </div>
   );

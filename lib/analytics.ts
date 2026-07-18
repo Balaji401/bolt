@@ -22,6 +22,8 @@ export type Metrics = {
   bySession: { key: string; pnl: number; trades: number; winRate: number }[];
   byWeekday: { day: string; pnl: number; trades: number; winRate: number }[];
   byStrategy: { key: string; pnl: number; trades: number; winRate: number }[];
+  byStrategySession: { strategy: string; session: string; pnl: number; trades: number; winRate: number }[];
+  byStrategyInstrument: { strategy: string; instrument: string; pnl: number; trades: number; winRate: number }[];
   todayPnl: number;
   weekPnl: number;
   monthPnl: number;
@@ -99,6 +101,38 @@ export function computeMetrics(trades: Trade[]): Metrics {
   const bySession = groupBy('session').filter((s) => s.key !== 'null' && s.key !== 'other');
   const byStrategy = groupBy('strategy_tags');
 
+  // Strategy × Session matrix
+  const strategySessionMap = new Map<string, { pnl: number; trades: number; wins: number }>();
+  const strategyInstrumentMap = new Map<string, { pnl: number; trades: number; wins: number }>();
+  closed.forEach((t) => {
+    const strategies = (t.strategy_tags || []).length ? t.strategy_tags : ['(none)'];
+    const session = t.session || 'other';
+    const instrument = t.instrument;
+    strategies.forEach((strat) => {
+      const k1 = `${strat}|${session}`;
+      const c1 = strategySessionMap.get(k1) || { pnl: 0, trades: 0, wins: 0 };
+      c1.pnl += Number(t.pnl);
+      c1.trades += 1;
+      if (Number(t.pnl) > 0) c1.wins += 1;
+      strategySessionMap.set(k1, c1);
+
+      const k2 = `${strat}|${instrument}`;
+      const c2 = strategyInstrumentMap.get(k2) || { pnl: 0, trades: 0, wins: 0 };
+      c2.pnl += Number(t.pnl);
+      c2.trades += 1;
+      if (Number(t.pnl) > 0) c2.wins += 1;
+      strategyInstrumentMap.set(k2, c2);
+    });
+  });
+  const byStrategySession = Array.from(strategySessionMap.entries()).map(([k, v]) => {
+    const [strategy, session] = k.split('|');
+    return { strategy, session, pnl: v.pnl, trades: v.trades, winRate: (v.wins / v.trades) * 100 };
+  });
+  const byStrategyInstrument = Array.from(strategyInstrumentMap.entries()).map(([k, v]) => {
+    const [strategy, instrument] = k.split('|');
+    return { strategy, instrument, pnl: v.pnl, trades: v.trades, winRate: (v.wins / v.trades) * 100 };
+  });
+
   const byWeekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => {
     const dayTrades = closed.filter((t) => new Date(t.executed_at).getDay() === idx);
     return {
@@ -141,6 +175,8 @@ export function computeMetrics(trades: Trade[]): Metrics {
     bySession,
     byWeekday,
     byStrategy,
+    byStrategySession,
+    byStrategyInstrument,
     todayPnl,
     weekPnl,
     monthPnl,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Sparkles,
   AlertTriangle,
@@ -11,7 +11,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { computeMetrics } from '@/lib/analytics';
-import type { Trade, AiInsight } from '@/lib/supabase';
+import { supabase, type Trade, type AiInsight } from '@/lib/supabase';
 import { fmtCurrency, fmtPct, fmtNum } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -30,8 +30,9 @@ const typeIcon: Record<string, React.ComponentType<{ className?: string }>> = {
   summary: Brain,
 };
 
-export function Coach({ trades, insights }: { trades: Trade[]; insights: AiInsight[] }) {
+export function Coach({ trades, insights, onRegenerated }: { trades: Trade[]; insights: AiInsight[]; onRegenerated?: () => void }) {
   const m = useMemo(() => computeMetrics(trades), [trades]);
+  const [regenerating, setRegenerating] = useState(false);
 
   const autoInsights = useMemo(() => {
     const out: { title: string; body: string; severity: 'success' | 'warning' | 'info' | 'critical' }[] = [];
@@ -117,8 +118,13 @@ export function Coach({ trades, insights }: { trades: Trade[]; insights: AiInsig
               Based on {m.totalTrades} closed trades. Net P&L {fmtCurrency(m.totalPnl)}. Win rate {fmtPct(m.winRate)}. Profit factor {fmtNum(m.profitFactor, 2)}.
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/60 border border-border text-sm hover:border-primary/40">
-            <RefreshCw className="w-4 h-4" /> Regenerate
+          <button
+            onClick={() => regenerate(m, autoInsights, setRegenerating, onRegenerated)}
+            disabled={regenerating}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/60 border border-border text-sm hover:border-primary/40 disabled:opacity-50"
+          >
+            <RefreshCw className={cn('w-4 h-4', regenerating && 'animate-spin')} />
+            {regenerating ? 'Analyzing...' : 'Regenerate'}
           </button>
         </div>
       </div>
@@ -185,4 +191,36 @@ function Pillar({ title, score, icon: Icon, items }: { title: string; score: num
       </ul>
     </div>
   );
+}
+
+async function regenerate(
+  m: ReturnType<typeof computeMetrics>,
+  autoInsights: { title: string; body: string; severity: 'success' | 'warning' | 'info' | 'critical'; insight_type?: string }[],
+  setRegenerating: (v: boolean) => void,
+  onDone?: () => void
+) {
+  setRegenerating(true);
+  // Clear existing AI insights and persist freshly generated ones.
+  await supabase.from('ai_insights').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  const rows = autoInsights.map((a) => ({
+    insight_type: (a.insight_type as any) || 'observation',
+    title: a.title,
+    body: a.body,
+    severity: a.severity,
+    metric_ref: null,
+  }));
+  if (rows.length) await supabase.from('ai_insights').insert(rows);
+  // Add a fresh summary insight based on the latest metrics.
+  await supabase.from('ai_insights').insert({
+    insight_type: 'summary',
+    title: 'Regenerated performance summary',
+    body: `Net P&L ${fmtCurrency(m.totalPnl)}. Win rate ${fmtPct(m.winRate)}. Profit factor ${fmtNum(m.profitFactor, 2)}. Avg R:R 1:${fmtNum(m.avgRr, 1)}. Max drawdown ${fmtCurrency(m.maxDrawdown)}.`,
+    severity: m.totalPnl >= 0 ? 'success' : 'warning',
+    metric_ref: 'summary',
+  });
+  // Simulate analysis time for UX feedback.
+  setTimeout(() => {
+    setRegenerating(false);
+    onDone?.();
+  }, 800);
 }

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Filter, X, ArrowUpRight, ArrowDownRight, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, X, ArrowUpRight, ArrowDownRight, Pencil, Trash2, Grid3x3 } from 'lucide-react';
 import { supabase, type Trade } from '@/lib/supabase';
-import { fmtCurrency, fmtDateTime, fmtNum } from '@/lib/format';
+import { computeMetrics } from '@/lib/analytics';
+import { fmtCurrency, fmtDateTime, fmtNum, fmtPct } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const INSTRUMENTS = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD', 'BTCUSD', 'ETHUSD', 'AAPL', 'TSLA', 'SP500', 'NAS100', 'GBPJPY', 'AUDUSD', 'USDCAD', 'US30', 'BRENT', 'CRUDE'];
@@ -132,6 +133,67 @@ export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () 
           onSaved={() => { setShowForm(false); onMutated(); }}
         />
       )}
+
+      <StrategySessionMatrix trades={trades} />
+    </div>
+  );
+}
+
+function StrategySessionMatrix({ trades }: { trades: Trade[] }) {
+  const m = useMemo(() => computeMetrics(trades), [trades]);
+  const sessions = ['asia', 'london', 'new_york', 'sydney', 'other'];
+  const strategies = Array.from(new Set(m.byStrategySession.map((s) => s.strategy)));
+  if (strategies.length === 0) return null;
+
+  const get = (strat: string, sess: string) => m.byStrategySession.find((x) => x.strategy === strat && x.session === sess);
+
+  return (
+    <div className="glass rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Grid3x3 className="w-4 h-4 text-primary" />
+        <div>
+          <h3 className="font-semibold">Strategy × Session Breakdown</h3>
+          <p className="text-xs text-muted-foreground">P&L per strategy across each trading session</p>
+        </div>
+      </div>
+      <div className="overflow-x-auto scrollbar-thin">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-muted-foreground border-b border-border">
+              <th className="font-medium pb-2 pr-4">Strategy</th>
+              {sessions.map((s) => (
+                <th key={s} className="font-medium pb-2 pr-4 capitalize">{s}</th>
+              ))}
+              <th className="font-medium pb-2 pr-4 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {strategies.map((strat) => {
+              const rowTotal = sessions.reduce((sum, s) => sum + (get(strat, s)?.pnl || 0), 0);
+              return (
+                <tr key={strat} className="border-b border-border/40 hover:bg-secondary/20">
+                  <td className="py-2.5 pr-4 font-medium">{strat}</td>
+                  {sessions.map((s) => {
+                    const cell = get(strat, s);
+                    if (!cell) return <td key={s} className="py-2.5 pr-4 text-muted-foreground/40">—</td>;
+                    return (
+                      <td key={s} className="py-2.5 pr-4">
+                        <div className={cn('font-semibold', cell.pnl >= 0 ? 'text-success' : 'text-destructive')}>
+                          {fmtCurrency(cell.pnl)}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">{cell.trades}t • {fmtPct(cell.winRate)}</div>
+                      </td>
+                    );
+                  })}
+                  <td className={cn('py-2.5 pr-4 text-right font-semibold', rowTotal >= 0 ? 'text-success' : 'text-destructive')}>
+                    {fmtCurrency(rowTotal)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -58,6 +58,9 @@
   .input {
     @apply w-full px-3 py-2 rounded-lg bg-secondary/60 border border-border text-sm outline-none transition-colors focus:border-primary focus:bg-secondary;
   }
+  .auth-input {
+    @apply flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground;
+  }
 }
 
 @layer utilities {

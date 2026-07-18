@@ -13,8 +13,12 @@ import {
   TrendingUp,
   HeartPulse,
   Plug,
+  Crown,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Profile, PlanTier } from '@/lib/supabase';
 
 export type ModuleKey =
   | 'dashboard'
@@ -41,7 +45,23 @@ const nav: { key: ModuleKey; label: string; icon: React.ComponentType<{ classNam
   { key: 'news', label: 'News Center', icon: Newspaper, group: 'Tools' },
 ];
 
-export function Sidebar({ active, onSelect }: { active: ModuleKey; onSelect: (k: ModuleKey) => void }) {
+export function Sidebar({
+  active,
+  onSelect,
+  onShowPlans,
+  onSignOut,
+  profile,
+  tier,
+}: {
+  active: ModuleKey;
+  onSelect: (k: ModuleKey) => void;
+  onShowPlans: () => void;
+  onSignOut: () => void;
+  profile: Profile | null;
+  tier: PlanTier;
+}) {
+  const initials = (profile?.display_name || 'T').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
   const groups = Array.from(new Set(nav.map((n) => n.group)));
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-card/40 backdrop-blur-xl">
@@ -90,17 +110,28 @@ export function Sidebar({ active, onSelect }: { active: ModuleKey; onSelect: (k:
           </div>
         ))}
       </nav>
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border p-3 space-y-2">
+        <button onClick={onShowPlans} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-primary/15 to-chart-4/15 border border-primary/30 text-xs font-medium hover:border-primary/50 transition-colors">
+          <Crown className="w-3.5 h-3.5 text-warning" />
+          <span className="flex-1 text-left">Upgrade plan</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground capitalize">{tier}</span>
+        </button>
         <div className="glass rounded-lg p-3 flex items-center gap-3">
           <div className="grid place-items-center w-9 h-9 rounded-full bg-gradient-to-br from-primary to-chart-4 text-primary-foreground text-sm font-semibold">
-            JT
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium truncate">Jordan Trade</div>
+            <div className="text-sm font-medium truncate flex items-center gap-1">
+              <User className="w-3 h-3 text-muted-foreground" />
+              {profile?.display_name || 'Trader'}
+            </div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Brain className="w-3 h-3" /> Pro Plan
+              <Crown className="w-3 h-3 text-warning" /> {tierLabel} plan
             </div>
           </div>
+          <button onClick={onSignOut} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive" title="Sign out">
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>

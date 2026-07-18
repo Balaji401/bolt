@@ -13,6 +13,9 @@ import { Psychology } from '@/components/modules/psychology';
 import { EconomicCalendar } from '@/components/modules/calendar';
 import { NewsCenter } from '@/components/modules/news';
 import { Brokers } from '@/components/modules/brokers';
+import { AuthPage } from '@/components/auth-page';
+import { PlanModal } from '@/components/plan-modal';
+import { useAuth } from '@/components/auth-provider';
 import { supabase, type Trade, type AiInsight, type OpenPosition, type TradingGoal } from '@/lib/supabase';
 
 const META: Record<ModuleKey, { title: string; subtitle: string }> = {
@@ -29,12 +32,14 @@ const META: Record<ModuleKey, { title: string; subtitle: string }> = {
 };
 
 export default function Home() {
+  const { user, loading: authLoading, signOut, profile, subscription, refresh } = useAuth();
   const [active, setActive] = useState<ModuleKey>('dashboard');
   const [trades, setTrades] = useState<Trade[]>([]);
   const [insights, setInsights] = useState<AiInsight[]>([]);
   const [positions, setPositions] = useState<OpenPosition[]>([]);
   const [goals, setGoals] = useState<TradingGoal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPlans, setShowPlans] = useState(false);
 
   const load = useCallback(async () => {
     const [t, i, p, g] = await Promise.all([
@@ -50,13 +55,30 @@ export default function Home() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (user) load();
+  }, [user, load]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen grid place-items-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          Loading TraderOS...
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return <AuthPage />;
+
+  const tier = subscription?.plan_tier || profile?.plan_tier || 'free';
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar active={active} onSelect={setActive} />
+      <Sidebar active={active} onSelect={setActive} onShowPlans={() => setShowPlans(true)} onSignOut={signOut} profile={profile} tier={tier} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar title={META[active].title} subtitle={META[active].subtitle} />
+        <Topbar title={META[active].title} subtitle={META[active].subtitle} onShowPlans={() => setShowPlans(true)} />
         <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 overflow-x-hidden">
           {loading ? (
             <div className="grid place-items-center h-64">
@@ -71,7 +93,7 @@ export default function Home() {
               {active === 'journal' && <Journal trades={trades} onMutated={load} />}
               {active === 'analytics' && <Analytics trades={trades} />}
               {active === 'risk' && <RiskManagement />}
-              {active === 'coach' && <Coach trades={trades} insights={insights} />}
+              {active === 'coach' && <Coach trades={trades} insights={insights} onRegenerated={load} />}
               {active === 'plan' && <Plan />}
               {active === 'psychology' && <Psychology />}
               {active === 'calendar' && <EconomicCalendar />}
@@ -82,6 +104,7 @@ export default function Home() {
         </main>
       </div>
       <MobileNav active={active} onSelect={setActive} />
+      {showPlans && <PlanModal onClose={() => setShowPlans(false)} onUpgraded={refresh} />}
     </div>
   );
 }

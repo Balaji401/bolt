@@ -4,7 +4,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'traderos-auth',
+  },
 });
 
 export type Trade = {
@@ -113,3 +118,26 @@ export type OpenPosition = {
   floating_pnl: number;
   opened_at: string;
 };
+
+export type Profile = {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  plan_tier: 'free' | 'starter' | 'pro' | 'elite';
+  created_at: string;
+  updated_at: string;
+};
+
+export type Subscription = {
+  id: string;
+  user_id: string;
+  plan_tier: 'free' | 'starter' | 'pro' | 'elite';
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired';
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  created_at: string;
+};
+
+export type PlanTier = 'free' | 'starter' | 'pro' | 'elite';
