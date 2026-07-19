@@ -8,6 +8,8 @@ import { Journal } from '@/components/modules/journal';
 import { Analytics } from '@/components/modules/analytics';
 import { RiskManagement } from '@/components/modules/risk';
 import { Coach } from '@/components/modules/coach';
+import { AiChat } from '@/components/modules/chat';
+import { Achievements } from '@/components/modules/achievements';
 import { Plan } from '@/components/modules/plan';
 import { Psychology } from '@/components/modules/psychology';
 import { EconomicCalendar } from '@/components/modules/calendar';
@@ -19,26 +21,28 @@ import { useAuth } from '@/components/auth-provider';
 import { supabase, type Trade, type AiInsight, type OpenPosition, type TradingGoal } from '@/lib/supabase';
 
 const META: Record<ModuleKey, { title: string; subtitle: string }> = {
-  dashboard: { title: 'Dashboard', subtitle: 'Your trading command center' },
-  journal: { title: 'Trading Journal', subtitle: 'Every trade, fully documented' },
-  analytics: { title: 'Performance Analytics', subtitle: 'Deep insights into your edge' },
-  risk: { title: 'Risk Management', subtitle: 'Professional calculators for every position' },
-  coach: { title: 'AI Trading Coach', subtitle: 'Personalized insights to improve your trading' },
-  plan: { title: 'Trading Plan', subtitle: 'Define your rules, follow your plan' },
-  psychology: { title: 'Trading Psychology', subtitle: 'Track and improve your mental game' },
-  calendar: { title: 'Economic Calendar', subtitle: 'Market-moving events at a glance' },
-  news: { title: 'News Center', subtitle: 'AI-curated financial news' },
-  brokers: { title: 'Broker Connections', subtitle: 'Auto-sync trades from your trading accounts' },
+  dashboard:    { title: 'Dashboard',           subtitle: 'Your trading command center' },
+  journal:      { title: 'Trading Journal',     subtitle: 'Every trade, fully documented' },
+  analytics:    { title: 'Performance Analytics', subtitle: 'Deep insights into your edge' },
+  risk:         { title: 'Risk Management',     subtitle: 'Professional calculators for every position' },
+  coach:        { title: 'AI Trading Coach',    subtitle: 'Personalized insights to improve your trading' },
+  chat:         { title: 'AI Trading Assistant', subtitle: 'Ask anything about your trades — get instant answers' },
+  achievements: { title: 'Achievements',        subtitle: 'Gamified milestones for your trading journey' },
+  plan:         { title: 'Trading Plan',        subtitle: 'Define your rules, follow your plan' },
+  psychology:   { title: 'Trading Psychology',  subtitle: 'Track and improve your mental game' },
+  calendar:     { title: 'Economic Calendar',   subtitle: 'Market-moving events at a glance' },
+  news:         { title: 'News Center',         subtitle: 'AI-curated financial news' },
+  brokers:      { title: 'Broker Connections',  subtitle: 'Auto-sync trades from your trading accounts' },
 };
 
 export default function Home() {
   const { user, loading: authLoading, signOut, profile, subscription, refresh } = useAuth();
-  const [active, setActive] = useState<ModuleKey>('dashboard');
-  const [trades, setTrades] = useState<Trade[]>([]);
+  const [active, setActive]     = useState<ModuleKey>('dashboard');
+  const [trades, setTrades]     = useState<Trade[]>([]);
   const [insights, setInsights] = useState<AiInsight[]>([]);
   const [positions, setPositions] = useState<OpenPosition[]>([]);
-  const [goals, setGoals] = useState<TradingGoal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [goals, setGoals]       = useState<TradingGoal[]>([]);
+  const [loading, setLoading]   = useState(true);
   const [showPlans, setShowPlans] = useState(false);
 
   const load = useCallback(async () => {
@@ -55,16 +59,14 @@ export default function Home() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (user) load();
-  }, [user, load]);
+  useEffect(() => { if (user) load(); }, [user, load]);
 
   if (authLoading) {
     return (
       <div className="min-h-screen grid place-items-center">
         <div className="flex items-center gap-3 text-muted-foreground">
           <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          Loading TraderOS...
+          Loading TraderOS…
         </div>
       </div>
     );
@@ -73,36 +75,55 @@ export default function Home() {
   if (!user) return <AuthPage />;
 
   const tier = subscription?.plan_tier || profile?.plan_tier || 'free';
+  const { title, subtitle } = META[active];
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar active={active} onSelect={setActive} onShowPlans={() => setShowPlans(true)} onSignOut={signOut} profile={profile} tier={tier} />
+      <Sidebar
+        active={active}
+        onSelect={setActive}
+        onShowPlans={() => setShowPlans(true)}
+        onSignOut={signOut}
+        profile={profile}
+        tier={tier}
+      />
+
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar title={META[active].title} subtitle={META[active].subtitle} onShowPlans={() => setShowPlans(true)} />
+        <Topbar
+          title={title}
+          subtitle={subtitle}
+          onShowPlans={() => setShowPlans(true)}
+          onOpenChat={() => setActive('chat')}
+          onAdd={active === 'journal' ? () => {} : undefined}
+        />
+
         <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 overflow-x-hidden">
           {loading ? (
             <div className="grid place-items-center h-64">
               <div className="flex items-center gap-3 text-muted-foreground">
                 <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                Loading your trading workspace...
+                Loading your trading workspace…
               </div>
             </div>
           ) : (
             <>
-              {active === 'dashboard' && <Dashboard trades={trades} insights={insights} positions={positions} goals={goals} />}
-              {active === 'journal' && <Journal trades={trades} onMutated={load} />}
-              {active === 'analytics' && <Analytics trades={trades} />}
-              {active === 'risk' && <RiskManagement />}
-              {active === 'coach' && <Coach trades={trades} insights={insights} onRegenerated={load} />}
-              {active === 'plan' && <Plan />}
-              {active === 'psychology' && <Psychology />}
-              {active === 'calendar' && <EconomicCalendar />}
-              {active === 'news' && <NewsCenter />}
-              {active === 'brokers' && <Brokers />}
+              {active === 'dashboard'    && <Dashboard trades={trades} insights={insights} positions={positions} goals={goals} />}
+              {active === 'journal'      && <Journal trades={trades} onMutated={load} />}
+              {active === 'analytics'   && <Analytics trades={trades} />}
+              {active === 'risk'        && <RiskManagement />}
+              {active === 'coach'       && <Coach trades={trades} insights={insights} onRegenerated={load} />}
+              {active === 'chat'        && <AiChat trades={trades} />}
+              {active === 'achievements' && <Achievements trades={trades} />}
+              {active === 'plan'        && <Plan />}
+              {active === 'psychology'  && <Psychology />}
+              {active === 'calendar'    && <EconomicCalendar />}
+              {active === 'news'        && <NewsCenter />}
+              {active === 'brokers'     && <Brokers />}
             </>
           )}
         </main>
       </div>
+
       <MobileNav active={active} onSelect={setActive} />
       {showPlans && <PlanModal onClose={() => setShowPlans(false)} onUpgraded={refresh} />}
     </div>

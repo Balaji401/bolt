@@ -33,6 +33,15 @@ export type Trade = {
   executed_at: string;
   closed_at: string | null;
   created_at: string;
+  // Enhanced journaling fields
+  setup_type: string | null;
+  before_notes: string | null;
+  during_notes: string | null;
+  after_notes: string | null;
+  mistakes: string[] | null;
+  lessons_learned: string | null;
+  screenshots: string[] | null;
+  holding_minutes: number | null;
 };
 
 export type AiInsight = {
@@ -42,6 +51,26 @@ export type AiInsight = {
   body: string;
   severity: 'info' | 'success' | 'warning' | 'critical';
   metric_ref: string | null;
+  created_at: string;
+};
+
+export type Achievement = {
+  id: string;
+  user_id: string;
+  slug: string;
+  title: string;
+  description: string;
+  icon: string;
+  category: string;
+  earned_at: string;
+};
+
+export type AiChatMessage = {
+  id: string;
+  user_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  session_id: string;
   created_at: string;
 };
 
