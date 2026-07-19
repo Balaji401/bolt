@@ -81,7 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message || null };
+    if (!error) return { error: null };
+    return { error: friendlyAuthError(error) };
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: { data: { full_name: displayName || email.split('@')[0] } },
     });
-    if (error) return { error: error.message };
+    if (error) return { error: friendlyAuthError(error) };
     if (data.user) {
       // Create profile on signup so user lands on the app immediately.
       await supabase.from('profiles').insert({
@@ -109,11 +110,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${origin}/` },
-    });
-    return { error: error?.message || null };
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${origin}/` },
+      });
+      if (error) return { error: friendlyAuthError(error) };
+      // OAuth redirect will occur; no error means redirect is in flight.
+      return { error: null };
+    } catch (e: any) {
+      return { error: 'Google sign-in is not available right now. Please use email and password instead.' };
+    }
   }, []);
 
   const signOut = useCallback(async () => {
@@ -140,4 +147,31 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
+}
+
+function friendlyAuthError(error: any): string {
+  const msg = (error?.message || '').toLowerCase();
+  const code = error?.code || error?.error_code;
+  if (code === 'weak_password' || msg.includes('weak_password') || msg.includes('password is known')) {
+    return 'That password is too common. Please choose a stronger password (at least 8 characters, with a mix of letters, numbers, and symbols).';
+  }
+  if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
+    return 'Incorrect email or password. Please double-check and try again.';
+  }
+  if (msg.includes('user already registered') || msg.includes('already registered')) {
+    return 'An account with this email already exists. Try signing in instead.';
+  }
+  if (msg.includes('email not confirmed') || msg.includes('email_rate_limit')) {
+    return 'Email confirmation is required. Contact support if you need help.';
+  }
+  if (msg.includes('provider is not enabled') || msg.includes('oauth') || msg.includes('google')) {
+    return 'Google sign-in is not configured on this project yet. Please use email and password — it takes 10 seconds.';
+  }
+  if (msg.includes('rate limit') || msg.includes('rate_limit')) {
+    return 'Too many attempts. Please wait a minute and try again.';
+  }
+  if (msg.includes('network') || msg.includes('fetch')) {
+    return 'Network error. Check your connection and try again.';
+  }
+  return error?.message || 'Something went wrong. Please try again.';
 }
