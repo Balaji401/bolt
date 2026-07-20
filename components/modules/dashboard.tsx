@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -9,10 +9,12 @@ import {
   Wallet, TrendingUp, TrendingDown, Target, Activity, Flame, Award,
   AlertTriangle, Sparkles, ArrowUpRight, ArrowDownRight, Crosshair,
   Trophy, Circle, BarChart3, Zap, Clock, Calendar, ThumbsUp, ThumbsDown,
+  ChevronDown, ChevronUp, LayoutGrid, Eye, EyeOff,
 } from 'lucide-react';
 import type { Trade, AiInsight, OpenPosition, TradingGoal } from '@/lib/supabase';
 import { computeMetrics } from '@/lib/analytics';
 import { fmtCurrency, fmtPct, fmtNum } from '@/lib/format';
+import { useTimezone } from '@/components/timezone-provider';
 import { StatCard } from '@/components/stat-card';
 import { cn } from '@/lib/utils';
 
@@ -41,52 +43,74 @@ export function Dashboard({
   const m = useMemo(() => computeMetrics(trades), [trades]);
   const recent = useMemo(() => [...trades]
     .sort((a, b) => new Date(b.executed_at).getTime() - new Date(a.executed_at).getTime())
-    .slice(0, 8), [trades]);
+    .slice(0, 5), [trades]);
+  const { formatDateTime } = useTimezone();
 
-  const topInsights = insights.slice(0, 4);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAllTrades, setShowAllTrades] = useState(false);
+
+  const topInsights = insights.slice(0, 3);
   const bestDay  = m.byWeekday.reduce((a, b) => b.pnl > a.pnl ? b : a, m.byWeekday[0] || { day: '—', pnl: 0, trades: 0, winRate: 0 });
   const worstDay = m.byWeekday.reduce((a, b) => b.pnl < a.pnl ? b : a, m.byWeekday[0] || { day: '—', pnl: 0, trades: 0, winRate: 0 });
+
+  const displayedTrades = showAllTrades ? trades.slice(0, 20) : recent;
 
   return (
     <div className="space-y-5 animate-fade-in">
 
-      {/* ── Row 1: Primary KPIs ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatCard label="Account Balance"   value={fmtCurrency(10000 + m.totalPnl)} delta={fmtPct((m.totalPnl / 10000) * 100)} deltaPositive={m.totalPnl >= 0} icon={Wallet}     accent="primary"     />
-        <StatCard label="Net P&L"            value={fmtCurrency(m.netPnl)}            icon={m.netPnl >= 0 ? TrendingUp : TrendingDown} accent={m.netPnl >= 0 ? 'success' : 'destructive'} />
-        <StatCard label="Today P&L"          value={fmtCurrency(m.todayPnl)}          icon={Activity}     accent={m.todayPnl >= 0 ? 'success' : 'destructive'} sub={`${m.todayTrades} trades`} />
-        <StatCard label="Win Rate"           value={fmtPct(m.winRate)}                icon={Target}       accent="primary"     sub={`${m.wins}W / ${m.losses}L`} />
-        <StatCard label="Profit Factor"      value={fmtNum(m.profitFactor, 2)}        icon={Award}        accent="chart"       />
-        <StatCard label="Total Trades"       value={m.totalTrades.toString()}         icon={BarChart3}    accent="primary"     sub={`${m.wins} wins · ${m.losses} losses`} />
+      {/* Essential KPIs - always visible */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Key Metrics</h2>
+          <button
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary/60 border border-border hover:border-primary/40 transition-colors"
+          >
+            {showAdvanced ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            {showAdvanced ? 'Hide advanced' : 'Show advanced'}
+            {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+          <StatCard label="Account Balance"   value={fmtCurrency(10000 + m.totalPnl)} delta={fmtPct((m.totalPnl / 10000) * 100)} deltaPositive={m.totalPnl >= 0} icon={Wallet}     accent="primary"     />
+          <StatCard label="Net P&L"            value={fmtCurrency(m.netPnl)}            icon={m.netPnl >= 0 ? TrendingUp : TrendingDown} accent={m.netPnl >= 0 ? 'success' : 'destructive'} />
+          <StatCard label="Today P&L"          value={fmtCurrency(m.todayPnl)}          icon={Activity}     accent={m.todayPnl >= 0 ? 'success' : 'destructive'} sub={`${m.todayTrades} trades`} />
+          <StatCard label="Win Rate"           value={fmtPct(m.winRate)}                icon={Target}       accent="primary"     sub={`${m.wins}W / ${m.losses}L`} />
+          <StatCard label="Profit Factor"      value={fmtNum(m.profitFactor, 2)}        icon={Award}        accent="chart"       />
+          <StatCard label="Total Trades"       value={m.totalTrades.toString()}         icon={BarChart3}    accent="primary"     sub={`${m.wins} wins · ${m.losses} losses`} />
+        </div>
       </div>
 
-      {/* ── Row 2: Secondary KPIs ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
-        <StatCard label="Total Profit"       value={fmtCurrency(m.grossProfit)}       icon={ArrowUpRight}   accent="success"     />
-        <StatCard label="Total Loss"         value={fmtCurrency(m.grossLoss)}         icon={ArrowDownRight} accent="destructive" />
-        <StatCard label="Largest Win"        value={fmtCurrency(m.bestTrade)}         icon={ThumbsUp}       accent="success"     />
-        <StatCard label="Largest Loss"       value={fmtCurrency(Math.abs(m.worstTrade))} icon={ThumbsDown}  accent="destructive" />
-        <StatCard label="Avg R:R"            value={`1:${fmtNum(m.avgRR, 1)}`}        icon={Target}         accent="chart"       />
-        <StatCard label="Expectancy"         value={fmtCurrency(m.expectancy)}        icon={Zap}            accent={m.expectancy >= 0 ? 'success' : 'destructive'} />
-        <StatCard label="Max Drawdown"       value={fmtPct(m.maxDrawdownPct)}         icon={AlertTriangle}  accent="warning"     />
-        <StatCard label="Avg Hold Time"      value={fmtDuration(m.avgHoldingMinutes)} icon={Clock}          accent="chart"       />
-      </div>
+      {/* Advanced KPIs - toggleable */}
+      {showAdvanced && (
+        <div className="space-y-3 animate-fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+            <StatCard label="Total Profit"       value={fmtCurrency(m.grossProfit)}       icon={ArrowUpRight}   accent="success"     />
+            <StatCard label="Total Loss"         value={fmtCurrency(m.grossLoss)}         icon={ArrowDownRight} accent="destructive" />
+            <StatCard label="Largest Win"        value={fmtCurrency(m.bestTrade)}         icon={ThumbsUp}       accent="success"     />
+            <StatCard label="Largest Loss"       value={fmtCurrency(Math.abs(m.worstTrade))} icon={ThumbsDown}  accent="destructive" />
+            <StatCard label="Avg R:R"            value={`1:${fmtNum(m.avgRR, 1)}`}        icon={Target}         accent="chart"       />
+            <StatCard label="Expectancy"         value={fmtCurrency(m.expectancy)}        icon={Zap}            accent={m.expectancy >= 0 ? 'success' : 'destructive'} />
+            <StatCard label="Max Drawdown"       value={fmtPct(m.maxDrawdownPct)}         icon={AlertTriangle}  accent="warning"     />
+            <StatCard label="Avg Hold Time"      value={fmtDuration(m.avgHoldingMinutes)} icon={Clock}          accent="chart"       />
+          </div>
 
-      {/* ── Row 3: Time-period P&L ─────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Daily P&L"          value={fmtCurrency(m.todayPnl)}    icon={Calendar}   accent={m.todayPnl >= 0 ? 'success' : 'destructive'}  sub="Today" />
-        <StatCard label="Weekly P&L"         value={fmtCurrency(m.weekPnl)}     icon={Calendar}   accent={m.weekPnl >= 0 ? 'success' : 'destructive'}   sub="This week" />
-        <StatCard label="Monthly P&L"        value={fmtCurrency(m.monthPnl)}    icon={Calendar}   accent={m.monthPnl >= 0 ? 'success' : 'destructive'}  sub="This month" />
-        <StatCard
-          label="Trading Streak"
-          value={`${Math.abs(m.currentStreak)} ${m.streakType === 'win' ? 'W' : m.streakType === 'loss' ? 'L' : ''}`}
-          icon={Flame}
-          accent={m.streakType === 'win' ? 'success' : m.streakType === 'loss' ? 'destructive' : 'chart'}
-          sub={`Longest: ${m.longestWinStreak}W / ${m.longestLossStreak}L`}
-        />
-      </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label="Daily P&L"          value={fmtCurrency(m.todayPnl)}    icon={Calendar}   accent={m.todayPnl >= 0 ? 'success' : 'destructive'}  sub="Today" />
+            <StatCard label="Weekly P&L"         value={fmtCurrency(m.weekPnl)}     icon={Calendar}   accent={m.weekPnl >= 0 ? 'success' : 'destructive'}   sub="This week" />
+            <StatCard label="Monthly P&L"        value={fmtCurrency(m.monthPnl)}    icon={Calendar}   accent={m.monthPnl >= 0 ? 'success' : 'destructive'}  sub="This month" />
+            <StatCard
+              label="Trading Streak"
+              value={`${Math.abs(m.currentStreak)} ${m.streakType === 'win' ? 'W' : m.streakType === 'loss' ? 'L' : ''}`}
+              icon={Flame}
+              accent={m.streakType === 'win' ? 'success' : m.streakType === 'loss' ? 'destructive' : 'chart'}
+              sub={`Longest: ${m.longestWinStreak}W / ${m.longestLossStreak}L`}
+            />
+          </div>
+        </div>
+      )}
 
-      {/* ── Equity curve + AI summary ──────────────────────────────── */}
+      {/* Equity curve + AI summary - essential */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="xl:col-span-2 glass rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
@@ -147,141 +171,146 @@ export function Dashboard({
         </div>
       </div>
 
-      {/* ── Session + Instrument + Win/Loss ───────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="glass rounded-xl p-5">
-          <h3 className="font-semibold mb-1">P&L by Session</h3>
-          <p className="text-xs text-muted-foreground mb-4">Performance across market sessions</p>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={m.bySession} margin={{ top: 0, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 14% 18%)" vertical={false} />
-                <XAxis dataKey="session" tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip contentStyle={{ background: 'hsl(222 22% 9%)', border: '1px solid hsl(222 14% 18%)', borderRadius: 12, fontSize: 12 }} cursor={{ fill: 'hsl(222 14% 18% / 0.3)' }} formatter={(v: number) => [fmtCurrency(v), 'P&L']} />
-                <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
-                  {m.bySession.map((s, i) => <Cell key={i} fill={SESSION_COLORS[s.session] || 'hsl(215 16% 50%)'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      {/* Advanced sections - toggleable */}
+      {showAdvanced && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Session + Instrument + Win/Loss */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="glass rounded-xl p-5">
+              <h3 className="font-semibold mb-1">P&L by Session</h3>
+              <p className="text-xs text-muted-foreground mb-4">Performance across market sessions</p>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={m.bySession} margin={{ top: 0, right: 5, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 14% 18%)" vertical={false} />
+                    <XAxis dataKey="session" tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                    <Tooltip contentStyle={{ background: 'hsl(222 22% 9%)', border: '1px solid hsl(222 14% 18%)', borderRadius: 12, fontSize: 12 }} cursor={{ fill: 'hsl(222 14% 18% / 0.3)' }} formatter={(v: number) => [fmtCurrency(v), 'P&L']} />
+                    <Bar dataKey="pnl" radius={[6, 6, 0, 0]}>
+                      {m.bySession.map((s, i) => <Cell key={i} fill={SESSION_COLORS[s.session] || 'hsl(215 16% 50%)'} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-        <div className="glass rounded-xl p-5">
-          <h3 className="font-semibold mb-1">Top Instruments</h3>
-          <p className="text-xs text-muted-foreground mb-4">P&L ranked by instrument</p>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={m.byInstrument.slice(0, 6)} layout="vertical" margin={{ top: 0, right: 5, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 14% 18%)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <YAxis type="category" dataKey="instrument" tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} width={56} />
-                <Tooltip contentStyle={{ background: 'hsl(222 22% 9%)', border: '1px solid hsl(222 14% 18%)', borderRadius: 12, fontSize: 12 }} cursor={{ fill: 'hsl(222 14% 18% / 0.3)' }} formatter={(v: number) => [fmtCurrency(v), 'P&L']} />
-                <Bar dataKey="pnl" radius={[0, 6, 6, 0]}>
-                  {m.byInstrument.slice(0, 6).map((s, i) => <Cell key={i} fill={s.pnl >= 0 ? 'hsl(152 65% 48%)' : 'hsl(0 72% 60%)'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+            <div className="glass rounded-xl p-5">
+              <h3 className="font-semibold mb-1">Top Instruments</h3>
+              <p className="text-xs text-muted-foreground mb-4">P&L ranked by instrument</p>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={m.byInstrument.slice(0, 6)} layout="vertical" margin={{ top: 0, right: 5, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(222 14% 18%)" horizontal={false} />
+                    <XAxis type="number" tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                    <YAxis type="category" dataKey="instrument" tick={{ fill: 'hsl(215 16% 55%)', fontSize: 11 }} axisLine={false} tickLine={false} width={56} />
+                    <Tooltip contentStyle={{ background: 'hsl(222 22% 9%)', border: '1px solid hsl(222 14% 18%)', borderRadius: 12, fontSize: 12 }} cursor={{ fill: 'hsl(222 14% 18% / 0.3)' }} formatter={(v: number) => [fmtCurrency(v), 'P&L']} />
+                    <Bar dataKey="pnl" radius={[0, 6, 6, 0]}>
+                      {m.byInstrument.slice(0, 6).map((s, i) => <Cell key={i} fill={s.pnl >= 0 ? 'hsl(152 65% 48%)' : 'hsl(0 72% 60%)'} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
 
-        <div className="glass rounded-xl p-5">
-          <h3 className="font-semibold mb-1">Win / Loss Split</h3>
-          <p className="text-xs text-muted-foreground mb-4">Outcome distribution</p>
-          <div className="h-48 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Wins',     value: m.wins,     color: 'hsl(152 65% 48%)' },
-                    { name: 'Losses',   value: m.losses,   color: 'hsl(0 72% 60%)' },
-                    { name: 'Breakeven', value: m.breakeven, color: 'hsl(215 16% 50%)' },
-                  ]}
-                  dataKey="value" innerRadius={48} outerRadius={70} paddingAngle={3} stroke="none"
-                >
-                  <Cell fill="hsl(152 65% 48%)" />
-                  <Cell fill="hsl(0 72% 60%)" />
-                  <Cell fill="hsl(215 16% 50%)" />
-                </Pie>
-                <Tooltip contentStyle={{ background: 'hsl(222 22% 9%)', border: '1px solid hsl(222 14% 18%)', borderRadius: 12, fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 grid place-items-center pointer-events-none">
-              <div className="text-center">
-                <div className="text-2xl font-semibold">{fmtPct(m.winRate)}</div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Win Rate</div>
+            <div className="glass rounded-xl p-5">
+              <h3 className="font-semibold mb-1">Win / Loss Split</h3>
+              <p className="text-xs text-muted-foreground mb-4">Outcome distribution</p>
+              <div className="h-48 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Wins',     value: m.wins,     color: 'hsl(152 65% 48%)' },
+                        { name: 'Losses',   value: m.losses,   color: 'hsl(0 72% 60%)' },
+                        { name: 'Breakeven', value: m.breakeven, color: 'hsl(215 16% 50%)' },
+                      ]}
+                      dataKey="value" innerRadius={48} outerRadius={70} paddingAngle={3} stroke="none"
+                    >
+                      <Cell fill="hsl(152 65% 48%)" />
+                      <Cell fill="hsl(0 72% 60%)" />
+                      <Cell fill="hsl(215 16% 50%)" />
+                    </Pie>
+                    <Tooltip contentStyle={{ background: 'hsl(222 22% 9%)', border: '1px solid hsl(222 14% 18%)', borderRadius: 12, fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                  <div className="text-center">
+                    <div className="text-2xl font-semibold">{fmtPct(m.winRate)}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Win Rate</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* ── Best/Worst day + Weekday heatmap ───────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="glass rounded-xl p-5 flex flex-col gap-3">
-          <h3 className="font-semibold">Best &amp; Worst Day</h3>
-          <div className="flex-1 grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-success/10 border border-success/20 p-4 text-center">
-              <ThumbsUp className="w-5 h-5 text-success mx-auto mb-2" />
-              <div className="text-lg font-semibold text-success">{bestDay.day}</div>
-              <div className="text-xs text-muted-foreground">{fmtCurrency(bestDay.pnl)}</div>
-              <div className="text-[10px] text-muted-foreground mt-1">{fmtPct(bestDay.winRate)} win rate</div>
-            </div>
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
-              <ThumbsDown className="w-5 h-5 text-destructive mx-auto mb-2" />
-              <div className="text-lg font-semibold text-destructive">{worstDay.day}</div>
-              <div className="text-xs text-muted-foreground">{fmtCurrency(worstDay.pnl)}</div>
-              <div className="text-[10px] text-muted-foreground mt-1">{fmtPct(worstDay.winRate)} win rate</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="glass rounded-lg p-2.5 text-center">
-              <div className="font-semibold text-success">{m.longestWinStreak}</div>
-              <div className="text-muted-foreground">Best streak</div>
-            </div>
-            <div className="glass rounded-lg p-2.5 text-center">
-              <div className="font-semibold text-destructive">{m.longestLossStreak}</div>
-              <div className="text-muted-foreground">Worst streak</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2 glass rounded-xl p-5">
-          <h3 className="font-semibold mb-1">Trading Heatmap</h3>
-          <p className="text-xs text-muted-foreground mb-4">P&L and trade count by weekday</p>
-          <div className="grid grid-cols-7 gap-2">
-            {m.byWeekday.map((d) => {
-              const intensity = Math.min(Math.abs(d.pnl) / 500, 1);
-              const color = d.pnl > 0
-                ? `hsl(152 65% 48% / ${0.15 + intensity * 0.6})`
-                : d.pnl < 0
-                  ? `hsl(0 72% 60% / ${0.15 + intensity * 0.6})`
-                  : 'hsl(222 14% 18%)';
-              return (
-                <div key={d.day} className="flex flex-col items-center gap-1.5">
-                  <div className="text-[10px] font-medium text-muted-foreground">{d.day}</div>
-                  <div
-                    className="w-full aspect-square rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 cursor-default"
-                    style={{ background: color, border: '1px solid hsl(222 14% 20%)' }}
-                    title={`${d.day}: ${fmtCurrency(d.pnl)} (${d.trades} trades, ${fmtPct(d.winRate)} WR)`}
-                  >
-                    <span className="text-xs font-bold">{d.trades}</span>
-                    <span className="text-[9px] text-muted-foreground">trades</span>
-                  </div>
-                  <div className={cn('text-[10px] font-medium', d.pnl > 0 ? 'text-success' : d.pnl < 0 ? 'text-destructive' : 'text-muted-foreground')}>
-                    {d.pnl > 0 ? '+' : ''}{fmtCurrency(d.pnl)}
-                  </div>
+          {/* Best/Worst day + Weekday heatmap */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="glass rounded-xl p-5 flex flex-col gap-3">
+              <h3 className="font-semibold">Best &amp; Worst Day</h3>
+              <div className="flex-1 grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-success/10 border border-success/20 p-4 text-center">
+                  <ThumbsUp className="w-5 h-5 text-success mx-auto mb-2" />
+                  <div className="text-lg font-semibold text-success">{bestDay.day}</div>
+                  <div className="text-xs text-muted-foreground">{fmtCurrency(bestDay.pnl)}</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">{fmtPct(bestDay.winRate)} win rate</div>
                 </div>
-              );
-            })}
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
+                  <ThumbsDown className="w-5 h-5 text-destructive mx-auto mb-2" />
+                  <div className="text-lg font-semibold text-destructive">{worstDay.day}</div>
+                  <div className="text-xs text-muted-foreground">{fmtCurrency(worstDay.pnl)}</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">{fmtPct(worstDay.winRate)} win rate</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="glass rounded-lg p-2.5 text-center">
+                  <div className="font-semibold text-success">{m.longestWinStreak}</div>
+                  <div className="text-muted-foreground">Best streak</div>
+                </div>
+                <div className="glass rounded-lg p-2.5 text-center">
+                  <div className="font-semibold text-destructive">{m.longestLossStreak}</div>
+                  <div className="text-muted-foreground">Worst streak</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 glass rounded-xl p-5">
+              <h3 className="font-semibold mb-1">Trading Heatmap</h3>
+              <p className="text-xs text-muted-foreground mb-4">P&L and trade count by weekday</p>
+              <div className="grid grid-cols-7 gap-2">
+                {m.byWeekday.map((d) => {
+                  const intensity = Math.min(Math.abs(d.pnl) / 500, 1);
+                  const color = d.pnl > 0
+                    ? `hsl(152 65% 48% / ${0.15 + intensity * 0.6})`
+                    : d.pnl < 0
+                      ? `hsl(0 72% 60% / ${0.15 + intensity * 0.6})`
+                      : 'hsl(222 14% 18%)';
+                  return (
+                    <div key={d.day} className="flex flex-col items-center gap-1.5">
+                      <div className="text-[10px] font-medium text-muted-foreground">{d.day}</div>
+                      <div
+                        className="w-full aspect-square rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105 cursor-default"
+                        style={{ background: color, border: '1px solid hsl(222 14% 20%)' }}
+                        title={`${d.day}: ${fmtCurrency(d.pnl)} (${d.trades} trades, ${fmtPct(d.winRate)} WR)`}
+                      >
+                        <span className="text-xs font-bold">{d.trades}</span>
+                        <span className="text-[9px] text-muted-foreground">trades</span>
+                      </div>
+                      <div className={cn('text-[10px] font-medium', d.pnl > 0 ? 'text-success' : d.pnl < 0 ? 'text-destructive' : 'text-muted-foreground')}>
+                        {d.pnl > 0 ? '+' : ''}{fmtCurrency(d.pnl)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+
+          {/* Strategy × Session matrix */}
+          <StrategySessionMatrix trades={trades} />
         </div>
-      </div>
+      )}
 
-      {/* ── Strategy × Session matrix ──────────────────────────────── */}
-      <StrategySessionMatrix trades={trades} />
-
-      {/* ── Open positions + Goals ─────────────────────────────────── */}
+      {/* Open positions + Goals - essential */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {/* Open positions */}
         <div className="glass rounded-xl p-5">
@@ -354,7 +383,7 @@ export function Dashboard({
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-muted-foreground">{fmt(Number(g.current_value))} / {fmt(Number(g.target_value))}</span>
                       <span className={cn('font-semibold', g.completed || pct >= 100 ? 'text-success' : 'text-primary')}>
-                        {g.completed ? '✓ Done' : `${fmtNum(pct, 0)}%`}
+                        {g.completed ? 'Done' : `${fmtNum(pct, 0)}%`}
                       </span>
                     </div>
                     <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
@@ -368,13 +397,24 @@ export function Dashboard({
         </div>
       </div>
 
-      {/* ── Recent trades table ─────────────────────────────────────── */}
+      {/* Recent trades table - essential, with expandable rows */}
       <div className="glass rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold">Recent Trades</h3>
-            <p className="text-xs text-muted-foreground">Latest 8 closed positions</p>
+            <p className="text-xs text-muted-foreground">
+              {showAllTrades ? `Showing ${displayedTrades.length} trades` : `Latest ${recent.length} closed positions`}
+            </p>
           </div>
+          {trades.length > 5 && (
+            <button
+              onClick={() => setShowAllTrades((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary/60 border border-border hover:border-primary/40 transition-colors"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              {showAllTrades ? 'Show less' : `Show all (${trades.length})`}
+            </button>
+          )}
         </div>
         <div className="overflow-x-auto scrollbar-thin">
           <table className="w-full text-sm">
@@ -386,7 +426,7 @@ export function Dashboard({
               </tr>
             </thead>
             <tbody>
-              {recent.map((t) => (
+              {displayedTrades.map((t) => (
                 <tr key={t.id} className="border-b border-border/40 hover:bg-secondary/20 transition-colors">
                   <td className="py-2.5 pr-4 font-medium">{t.instrument}</td>
                   <td className="py-2.5 pr-4">
@@ -405,7 +445,7 @@ export function Dashboard({
                     </div>
                   </td>
                   <td className="py-2.5 pr-4 text-[11px] text-muted-foreground">
-                    {new Date(t.executed_at).toLocaleDateString()}
+                    {formatDateTime(t.executed_at)}
                   </td>
                   <td className={cn('py-2.5 pr-4 text-right font-semibold text-sm', Number(t.pnl) >= 0 ? 'text-success' : 'text-destructive')}>
                     {fmtCurrency(Number(t.pnl))}
@@ -414,7 +454,7 @@ export function Dashboard({
               ))}
             </tbody>
           </table>
-          {recent.length === 0 && (
+          {displayedTrades.length === 0 && (
             <div className="text-center text-sm text-muted-foreground py-8">
               No trades yet. Add your first trade in the Trading Journal.
             </div>

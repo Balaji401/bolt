@@ -3,21 +3,29 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Send, Sparkles, Loader2, RefreshCw, MessageSquare, User, TrendingUp,
-  BarChart3, Target, Brain, Zap, Trophy,
+  BarChart3, Target, Brain, Zap, Trophy, AlertCircle, DollarSign,
+  Clock, PieChart, LineChart, TrendingDown,
 } from 'lucide-react';
 import { supabase, type Trade } from '@/lib/supabase';
 import { computeMetrics } from '@/lib/analytics';
+import { useTimezone } from '@/components/timezone-provider';
 import { cn } from '@/lib/utils';
 
 type Message = { role: 'user' | 'assistant'; content: string; ts: string };
 
 const SUGGESTED_QUESTIONS = [
-  { icon: TrendingUp,  text: 'Why am I losing money?' },
-  { icon: Target,      text: 'What is my best strategy?' },
-  { icon: BarChart3,   text: 'Which pair gives me the highest profits?' },
-  { icon: Zap,         text: 'What time do I perform best?' },
-  { icon: Brain,       text: 'How can I improve my win rate?' },
-  { icon: Trophy,      text: 'Show my biggest mistakes.' },
+  { icon: TrendingUp,    text: 'Why am I losing money?',           category: 'Performance' },
+  { icon: Target,        text: 'What is my best strategy?',         category: 'Performance' },
+  { icon: BarChart3,     text: 'Which pair gives me the highest profits?', category: 'Performance' },
+  { icon: Zap,           text: 'What time do I perform best?',       category: 'Performance' },
+  { icon: Brain,         text: 'How can I improve my win rate?',     category: 'Improvement' },
+  { icon: Trophy,        text: 'Show my biggest mistakes.',          category: 'Improvement' },
+  { icon: DollarSign,    text: 'How much profit have I made?',        category: 'Summary' },
+  { icon: Clock,         text: 'What is my current streak?',          category: 'Summary' },
+  { icon: PieChart,      text: 'Give me a trading summary',           category: 'Summary' },
+  { icon: LineChart,     text: 'What is my profit factor?',           category: 'Summary' },
+  { icon: TrendingDown,  text: 'What is my max drawdown?',            category: 'Risk' },
+  { icon: AlertCircle,   text: 'Should I avoid any session?',         category: 'Risk' },
 ];
 
 export function AiChat({ trades }: { trades: Trade[] }) {
@@ -25,12 +33,13 @@ export function AiChat({ trades }: { trades: Trade[] }) {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
+  const [activeCategory, setActiveCategory] = useState<string>('Performance');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { formatTime } = useTimezone();
 
   const metrics = computeMetrics(trades);
 
-  // Build context object for the edge function
   const context = {
     totalTrades: metrics.totalTrades,
     winRate: metrics.winRate,
@@ -46,7 +55,6 @@ export function AiChat({ trades }: { trades: Trade[] }) {
     maxDrawdown: metrics.maxDrawdown,
   };
 
-  // Load recent chat history on mount
   useEffect(() => {
     supabase
       .from('ai_chat_messages')
@@ -69,6 +77,7 @@ export function AiChat({ trades }: { trades: Trade[] }) {
           }]);
         }
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -135,6 +144,9 @@ export function AiChat({ trades }: { trades: Trade[] }) {
     }]);
   };
 
+  const categories = ['Performance', 'Improvement', 'Summary', 'Risk'];
+  const filteredSuggestions = SUGGESTED_QUESTIONS.filter((q) => q.category === activeCategory);
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col gap-4 lg:flex-row animate-fade-in">
       {/* Left: suggested questions panel */}
@@ -166,8 +178,27 @@ export function AiChat({ trades }: { trades: Trade[] }) {
             <MessageSquare className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold">Ask me…</span>
           </div>
+
+          {/* Category tabs */}
+          <div className="flex flex-wrap gap-1 mb-3">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  'px-2 py-1 rounded-md text-[10px] font-medium transition-colors',
+                  activeCategory === cat
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-1.5">
-            {SUGGESTED_QUESTIONS.map(({ icon: Icon, text }) => (
+            {filteredSuggestions.map(({ icon: Icon, text }) => (
               <button
                 key={text}
                 onClick={() => send(text)}
@@ -196,7 +227,7 @@ export function AiChat({ trades }: { trades: Trade[] }) {
           <div className="grid place-items-center w-9 h-9 rounded-full bg-gradient-to-br from-primary to-chart-4 text-primary-foreground">
             <Sparkles className="w-5 h-5" />
           </div>
-          <div>
+          <div className="flex-1">
             <div className="text-sm font-semibold">TraderOS AI</div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse-soft inline-block" />
@@ -208,7 +239,7 @@ export function AiChat({ trades }: { trades: Trade[] }) {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto scrollbar-thin px-5 py-4 space-y-4">
           {messages.map((m, i) => (
-            <ChatBubble key={i} message={m} />
+            <ChatBubble key={i} message={m} formatTime={formatTime} />
           ))}
           {busy && (
             <div className="flex items-center gap-3">
@@ -255,10 +286,9 @@ export function AiChat({ trades }: { trades: Trade[] }) {
   );
 }
 
-function ChatBubble({ message }: { message: Message }) {
+function ChatBubble({ message, formatTime }: { message: Message; formatTime: (d: Date | string) => string }) {
   const isUser = message.role === 'user';
 
-  // Parse markdown-style bold (**text**) and line breaks
   const formatted = message.content
     .split('\n')
     .map((line, i) => {
@@ -281,13 +311,18 @@ function ChatBubble({ message }: { message: Message }) {
       )}>
         {isUser ? <User className="w-3.5 h-3.5 text-muted-foreground" /> : <Sparkles className="w-3.5 h-3.5" />}
       </div>
-      <div className={cn(
-        'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
-        isUser
-          ? 'bg-primary text-primary-foreground rounded-tr-sm'
-          : 'glass rounded-tl-sm'
-      )}>
-        {formatted}
+      <div className={cn('flex flex-col', isUser ? 'items-end' : 'items-start')}>
+        <div className={cn(
+          'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+          isUser
+            ? 'bg-primary text-primary-foreground rounded-tr-sm'
+            : 'glass rounded-tl-sm'
+        )}>
+          {formatted}
+        </div>
+        <span className="text-[9px] text-muted-foreground mt-1 px-1">
+          {formatTime(message.ts)}
+        </span>
       </div>
     </div>
   );

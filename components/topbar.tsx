@@ -1,7 +1,10 @@
 'use client';
 
-import { Search, Bell, Plus, Crown, Sun, Moon, MessageSquare } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, Bell, Plus, Crown, Sun, Moon, MessageSquare, Globe, ChevronDown, Check } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
+import { useTimezone, COMMON_TIMEZONES } from '@/components/timezone-provider';
+import { cn } from '@/lib/utils';
 
 export function Topbar({
   title,
@@ -17,6 +20,30 @@ export function Topbar({
   onOpenChat?: () => void;
 }) {
   const { theme, toggle } = useTheme();
+  const { timezone, setTimezone, formatTime } = useTimezone();
+  const [now, setNow] = useState(new Date());
+  const [tzOpen, setTzOpen] = useState(false);
+  const [tzSearch, setTzSearch] = useState('');
+  const tzRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (tzRef.current && !tzRef.current.contains(e.target as Node)) setTzOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filteredTzs = COMMON_TIMEZONES.filter((tz) =>
+    tz.label.toLowerCase().includes(tzSearch.toLowerCase()) || tz.value.toLowerCase().includes(tzSearch.toLowerCase())
+  );
+
+  const currentTz = COMMON_TIMEZONES.find((tz) => tz.value === timezone) || COMMON_TIMEZONES[0];
 
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -38,6 +65,66 @@ export function Topbar({
           <kbd className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 hidden lg:block">
             ⌘K
           </kbd>
+        </div>
+
+        {/* Timezone + Live Clock */}
+        <div className="relative" ref={tzRef}>
+          <button
+            onClick={() => setTzOpen((v) => !v)}
+            className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            title="Select timezone"
+          >
+            <Globe className="w-4 h-4" />
+            <div className="hidden sm:flex flex-col items-end leading-tight">
+              <span className="text-xs font-medium tabular-nums text-foreground">{formatTime(now)}</span>
+              <span className="text-[9px] text-muted-foreground">{currentTz.label.split(' ')[0]}</span>
+            </div>
+            <ChevronDown className={cn('w-3 h-3 transition-transform', tzOpen && 'rotate-180')} />
+          </button>
+
+          {tzOpen && (
+            <div className="absolute right-0 top-full mt-2 w-72 glass-strong rounded-xl border border-border shadow-xl z-50 animate-fade-in overflow-hidden">
+              <div className="p-3 border-b border-border">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/60 border border-border">
+                  <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                  <input
+                    value={tzSearch}
+                    onChange={(e) => setTzSearch(e.target.value)}
+                    placeholder="Search timezone..."
+                    className="bg-transparent text-xs outline-none flex-1 placeholder:text-muted-foreground"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto scrollbar-thin py-1">
+                {filteredTzs.map((tz) => (
+                  <button
+                    key={tz.value}
+                    onClick={() => {
+                      setTimezone(tz.value);
+                      setTzOpen(false);
+                      setTzSearch('');
+                    }}
+                    className={cn(
+                      'w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-secondary/60 transition-colors',
+                      timezone === tz.value && 'text-primary'
+                    )}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{tz.label}</span>
+                      {tz.offset && (
+                        <span className="text-[10px] text-muted-foreground">UTC{tz.offset}</span>
+                      )}
+                    </div>
+                    {timezone === tz.value && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                  </button>
+                ))}
+                {filteredTzs.length === 0 && (
+                  <div className="px-3 py-4 text-xs text-muted-foreground text-center">No timezones found</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Theme toggle */}

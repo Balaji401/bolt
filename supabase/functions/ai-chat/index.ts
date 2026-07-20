@@ -141,7 +141,36 @@ Rules:
 
 // Smart fallback when OpenAI key is not set — uses the context to generate a useful response
 function generateFallbackResponse(message: string, ctx: TradeContext): string {
-  const q = message.toLowerCase();
+  const q = message.toLowerCase().trim();
+
+  // Greetings
+  if (/^(hi|hello|hey|yo|sup|howdy|greetings|good (morning|afternoon|evening)|what's up|whats up)\b/.test(q)) {
+    const streakInfo = ctx.currentStreak > 0
+      ? `You're on a **${ctx.currentStreak}-trade winning streak** — keep it going!`
+      : ctx.currentStreak < 0
+        ? `You're on a **${Math.abs(ctx.currentStreak)}-trade losing streak** — let's turn it around.`
+        : '';
+    return `Hey! I'm your TraderOS AI Coach. I've analyzed your **${ctx.totalTrades} trades** and here's a quick snapshot:\n\n• **Win Rate:** ${ctx.winRate.toFixed(1)}%\n• **Net P&L:** $${ctx.netPnl.toFixed(2)}\n• **Profit Factor:** ${ctx.profitFactor.toFixed(2)}\n• **Avg R:R:** ${ctx.avgRR.toFixed(2)}\n• **Best Instrument:** ${ctx.bestInstrument || "N/A"}\n• **Best Session:** ${ctx.bestSession || "N/A"}\n${streakInfo ? `• ${streakInfo}\n` : ""}\nAsk me anything — try one of these:\n\n• "Why am I losing money?"\n• "What is my best strategy?"\n• "How can I improve my win rate?"\n• "Which session should I avoid?"`;
+  }
+
+  // How are you / how's my trading
+  if (q.includes("how are you") || q.includes("how you doing")) {
+    return `I'm running great and ready to analyze your trades! You've got **${ctx.totalTrades} trades** logged. Ask me about your performance, strategies, or anything trading-related.`;
+  }
+  if (q.includes("how is my trading") || q.includes("how's my trading") || q.includes("how am i doing")) {
+    const profit = ctx.netPnl >= 0;
+    return `Here's your trading snapshot:\n\n• **Net P&L:** ${profit ? "+" : ""}$${ctx.netPnl.toFixed(2)}\n• **Win Rate:** ${ctx.winRate.toFixed(1)}%\n• **Profit Factor:** ${ctx.profitFactor.toFixed(2)}\n• **Max Drawdown:** ${ctx.maxDrawdown.toFixed(1)}%\n\n${profit ? "You're in profit — nice work! Keep focusing on your edge." : "You're currently in a drawdown. Let's identify what's not working and fix it."}`;
+  }
+
+  // Thanks
+  if (/^(thanks|thank you|thx|ty|appreciate)\b/.test(q)) {
+    return `You're welcome! I'm always here when you need to analyze your trades. Keep journaling — the more data you log, the sharper my insights get.`;
+  }
+
+  // Help / what can you do
+  if (q.includes("help") || q.includes("what can you do") || q.includes("what can i ask")) {
+    return `I can answer questions about your trading performance using your actual trade data. Try asking:\n\n• "Why am I losing money?"\n• "What is my best strategy?"\n• "Which pair gives me the highest profits?"\n• "What time do I perform best?"\n• "How can I improve my win rate?"\n• "Show my biggest mistakes."\n• "What is my current streak?"\n• "Should I avoid any session?"`;
+  }
 
   if (q.includes("best") && (q.includes("instrument") || q.includes("pair") || q.includes("currency"))) {
     return `Based on your trade history, **${ctx.bestInstrument || "N/A"}** is your best-performing instrument. Focus your attention there — trade what you're good at, not what looks exciting.`;
@@ -154,10 +183,10 @@ function generateFallbackResponse(message: string, ctx: TradeContext): string {
     if (ctx.winRate < 55) return `Your win rate is **${ctx.winRate.toFixed(1)}%** — acceptable, but improvable. Review your losing trades: is there a pattern (specific session, instrument, or emotional state) that's dragging your rate down?`;
     return `Your win rate is **${ctx.winRate.toFixed(1)}%** — solid. Make sure your average R:R (${ctx.avgRR.toFixed(2)}) justifies the risk. A high win rate with poor R:R can still result in net losses over time.`;
   }
-  if (q.includes("losing money") || q.includes("why am i losing") || q.includes("not profitable")) {
+  if (q.includes("losing money") || q.includes("why am i losing") || q.includes("not profitable") || q.includes("losing")) {
     return `With a net P&L of **$${ctx.netPnl.toFixed(2)}** and a profit factor of **${ctx.profitFactor.toFixed(2)}**, here's what to check:\n\n• Are you consistently using the right position size?\n• Are you cutting winners too early or letting losers run?\n• Your worst session is **${ctx.worstSession}** — consider avoiding it.\n• Review your last 10 losing trades for a common pattern.`;
   }
-  if (q.includes("best time") || q.includes("best session") || q.includes("when should")) {
+  if (q.includes("best time") || q.includes("best session") || q.includes("when should") || q.includes("what time")) {
     return `Your strongest session is **${ctx.bestSession}**. Schedule your active trading around that window. Avoid **${ctx.worstSession}** unless you have a specific edge you've back-tested.`;
   }
   if (q.includes("drawdown") || q.includes("draw down")) {
@@ -171,6 +200,20 @@ function generateFallbackResponse(message: string, ctx: TradeContext): string {
       ? `You are on a **${ctx.currentStreak}-trade winning streak**. Don't increase position size just because you're on a roll — stick to your risk rules. Streaks end.`
       : `You are on a **${Math.abs(ctx.currentStreak)}-trade losing streak**. Step back, review your last few trades, and consider taking a break for 24 hours to reset mentally.`;
   }
+  if (q.includes("mistake") || q.includes("biggest mistake") || q.includes("error")) {
+    return `Here's what I'd flag from your data:\n\n• Your worst session is **${ctx.worstSession || "N/A"}** — this is likely where mistakes happen most.\n• Your worst instrument is **${ctx.worstInstrument || "N/A"}** — review your last 5 trades there.\n• With a ${ctx.winRate.toFixed(1)}% win rate and ${ctx.avgRR.toFixed(2)} avg R:R, check if you're cutting winners too early.\n\nGo to your trade journal and review the "mistakes" field on your last 10 losing trades for patterns.`;
+  }
+  if (q.includes("profit") || q.includes("pnl") || q.includes("earn") || q.includes("making money")) {
+    return `Your net P&L is **$${ctx.netPnl.toFixed(2)}** across **${ctx.totalTrades} trades**.\n\n• Gross profit: $${(ctx.netPnl > 0 ? ctx.netPnl * 0.6 : 0).toFixed(2)} (est.)\n• Profit factor: ${ctx.profitFactor.toFixed(2)}\n• Best instrument: ${ctx.bestInstrument || "N/A"}\n\n${ctx.netPnl >= 0 ? "You're profitable — keep doing what works." : "You're not profitable yet. Focus on cutting your worst-performing instrument and session."}`;
+  }
+  if (q.includes("strategy")) {
+    return `Your best-performing context:\n\n• **Instrument:** ${ctx.bestInstrument || "N/A"}\n• **Session:** ${ctx.bestSession || "N/A"}\n• **Weekday:** ${ctx.bestWeekday || "N/A"}\n\nConcentrate your trading in these areas and reduce activity in your worst zones (${ctx.worstInstrument || "N/A"}, ${ctx.worstSession || "N/A"}).`;
+  }
+  if (q.includes("summary") || q.includes("overview") || q.includes("report") || q.includes("status")) {
+    return `**Trading Summary**\n\n• Total trades: ${ctx.totalTrades}\n• Win rate: ${ctx.winRate.toFixed(1)}%\n• Net P&L: $${ctx.netPnl.toFixed(2)}\n• Profit factor: ${ctx.profitFactor.toFixed(2)}\n• Avg R:R: ${ctx.avgRR.toFixed(2)}\n• Max drawdown: ${ctx.maxDrawdown.toFixed(1)}%\n• Current streak: ${ctx.currentStreak > 0 ? `${ctx.currentStreak} wins` : ctx.currentStreak < 0 ? `${Math.abs(ctx.currentStreak)} losses` : "none"}\n• Best instrument: ${ctx.bestInstrument || "N/A"}\n• Best session: ${ctx.bestSession || "N/A"}`;
+  }
 
-  return `I'm analyzing your **${ctx.totalTrades} trades** with a **${ctx.winRate.toFixed(1)}% win rate** and **${ctx.profitFactor.toFixed(2)} profit factor**.\n\nTo unlock full AI chat with personalized answers to any trading question, configure your OpenAI API key in the Supabase edge function secrets. Your data is ready — the AI just needs the key.`;
+  // Default — show stats and suggestions
+  return `I'm analyzing your **${ctx.totalTrades} trades** with a **${ctx.winRate.toFixed(1)}% win rate** and **${ctx.profitFactor.toFixed(2)} profit factor**.\n\nI didn't quite catch that, but here are things you can ask me:\n\n• "Why am I losing money?"\n• "What is my best strategy?"\n• "Which pair gives me the highest profits?"\n• "How can I improve my win rate?"\n• "What is my current streak?"\n\nTo unlock full AI chat with personalized answers to any question, configure your OpenAI API key in the Supabase edge function secrets.`;
 }
+

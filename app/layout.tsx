@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/components/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
+import { TimezoneProvider } from '@/components/timezone-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen`}>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <TimezoneProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </TimezoneProvider>
         </ThemeProvider>
       </body>
     </html>
