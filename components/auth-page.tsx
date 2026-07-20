@@ -73,7 +73,7 @@ const STATS = [
 
 export function AuthPage() {
   const { signIn, signUp } = useAuth();
-  const [tab, setTab]               = useState<Tab>('signin');
+  const [tab, setTab]               = useState<Tab>('about');
   const [mode, setMode]             = useState<'signin' | 'signup'>('signin');
   const [email, setEmail]           = useState('');
   const [password, setPassword]     = useState('');

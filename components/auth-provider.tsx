@@ -26,50 +26,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (u: User) => {
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', u.id)
-      .maybeSingle();
+    try {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', u.id)
+        .maybeSingle();
 
-    if (!existing) {
-      const displayName = (u.user_metadata?.full_name as string) || u.email?.split('@')[0] || 'Trader';
-      const { data: created } = await supabase.from('profiles').insert({
-        user_id: u.id,
-        display_name: displayName,
-        avatar_url: (u.user_metadata?.avatar_url as string) || null,
-        plan_tier: 'free',
-      }).select().maybeSingle();
-      setProfile(created as Profile | null);
-
-      await supabase.from('subscriptions').insert({
-        user_id: u.id,
-        plan_tier: 'free',
-        status: 'active',
-      });
-
-      // Store email in email_signups (upsert so duplicates are safe)
-      if (u.email) {
-        await supabase.from('email_signups').upsert({
-          email: u.email,
-          display_name: displayName,
+      if (!existing) {
+        const displayName = (u.user_metadata?.full_name as string) || u.email?.split('@')[0] || 'Trader';
+        const { data: created } = await supabase.from('profiles').insert({
           user_id: u.id,
-          source: 'signup_form',
-          sheets_synced: false,
-        }, { onConflict: 'email', ignoreDuplicates: false });
-        // Trigger Google Sheets sync via edge function (fire-and-forget)
-        triggerSheetsSync(u.email, displayName);
-      }
-    } else {
-      setProfile(existing as Profile);
-    }
+          display_name: displayName,
+          avatar_url: (u.user_metadata?.avatar_url as string) || null,
+          plan_tier: 'free',
+        }).select().maybeSingle();
+        setProfile(created as Profile | null);
 
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', u.id)
-      .maybeSingle();
-    setSubscription(sub as Subscription | null);
+        await supabase.from('subscriptions').insert({
+          user_id: u.id,
+          plan_tier: 'free',
+          status: 'active',
+        });
+
+        // Store email in email_signups (upsert so duplicates are safe)
+        if (u.email) {
+          await supabase.from('email_signups').upsert({
+            email: u.email,
+            display_name: displayName,
+            user_id: u.id,
+            source: 'signup_form',
+            sheets_synced: false,
+          }, { onConflict: 'email', ignoreDuplicates: false });
+          // Trigger Google Sheets sync via edge function (fire-and-forget)
+          triggerSheetsSync(u.email, displayName);
+        }
+      } else {
+        setProfile(existing as Profile);
+      }
+
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', u.id)
+        .maybeSingle();
+      setSubscription(sub as Subscription | null);
+    } catch (err) {
+      console.error('loadProfile error:', err);
+    }
   }, []);
 
   useEffect(() => {
@@ -87,15 +91,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: authSub } = supabase.auth.onAuthStateChange((event, newSession) => {
       (async () => {
-        setSession(newSession);
-        setUser(newSession?.user || null);
-        if (newSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          await loadProfile(newSession.user);
-        } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setSubscription(null);
+        try {
+          setSession(newSession);
+          setUser(newSession?.user || null);
+          if (newSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+            await loadProfile(newSession.user);
+          } else if (event === 'SIGNED_OUT') {
+            setProfile(null);
+            setSubscription(null);
+          }
+        } catch (err) {
+          console.error('onAuthStateChange error:', err);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       })();
     });
 

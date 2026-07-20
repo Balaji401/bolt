@@ -64,9 +64,15 @@ export default function Home() {
   if (authLoading) {
     return (
       <div className="min-h-screen grid place-items-center">
-        <div className="flex items-center gap-3 text-muted-foreground">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           Loading TraderOS…
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs text-primary underline underline-offset-2 mt-2"
+          >
+            Stuck? Click to retry
+          </button>
         </div>
       </div>
     );
