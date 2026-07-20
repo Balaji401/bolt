@@ -114,6 +114,14 @@ Rules:
     });
 
     if (!openAiRes.ok) {
+      // On quota/rate-limit errors, fall back to smart local response instead of surfacing a raw API error
+      if (openAiRes.status === 429 || openAiRes.status === 402) {
+        const fallback = generateFallbackResponse(message, context);
+        return new Response(JSON.stringify({ reply: fallback }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const errText = await openAiRes.text();
       throw new Error(`OpenAI error: ${openAiRes.status} ${errText}`);
     }
