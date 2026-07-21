@@ -1,47 +1,12 @@
 'use client';
 
-import {
-  LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, Target,
-  CalendarDays, Newspaper, TrendingUp, HeartPulse, Plug, Crown, LogOut,
-  User, MessageSquare, Trophy, ChevronRight,
-} from 'lucide-react';
+import { Crown, LogOut, User, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Profile, PlanTier } from '@/lib/supabase';
+import { MODULES, MODULE_GROUPS, type ModuleKey } from '@/lib/module-registry';
+import { BrandLogo } from '@/components/brand/brand-logo';
 
-export type ModuleKey =
-  | 'dashboard'
-  | 'journal'
-  | 'analytics'
-  | 'risk'
-  | 'coach'
-  | 'chat'
-  | 'achievements'
-  | 'plan'
-  | 'psychology'
-  | 'calendar'
-  | 'news'
-  | 'brokers';
-
-const nav: {
-  key: ModuleKey;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  group: string;
-  badge?: string;
-}[] = [
-  { key: 'dashboard',    label: 'Dashboard',         icon: LayoutDashboard, group: 'Overview' },
-  { key: 'journal',      label: 'Trading Journal',   icon: BookOpen,        group: 'Overview' },
-  { key: 'analytics',   label: 'Performance',        icon: BarChart3,       group: 'Overview' },
-  { key: 'coach',       label: 'AI Coach',            icon: Sparkles,        group: 'Intelligence' },
-  { key: 'chat',        label: 'AI Chat',             icon: MessageSquare,   group: 'Intelligence', badge: 'NEW' },
-  { key: 'psychology',  label: 'Psychology',          icon: HeartPulse,      group: 'Intelligence' },
-  { key: 'achievements',label: 'Achievements',        icon: Trophy,          group: 'Intelligence' },
-  { key: 'brokers',     label: 'Broker Sync',         icon: Plug,            group: 'Connections' },
-  { key: 'risk',        label: 'Risk Management',     icon: Calculator,      group: 'Tools' },
-  { key: 'plan',        label: 'Trading Plan',        icon: Target,          group: 'Tools' },
-  { key: 'calendar',    label: 'Economic Calendar',   icon: CalendarDays,    group: 'Tools' },
-  { key: 'news',        label: 'News Center',         icon: Newspaper,       group: 'Tools' },
-];
+export type { ModuleKey };
 
 const TIER_COLORS: Record<PlanTier, string> = {
   free:    'text-muted-foreground',
@@ -72,22 +37,13 @@ export function Sidebar({
     .join('')
     .toUpperCase();
   const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-  const groups = Array.from(new Set(nav.map((n) => n.group)));
+  const groups = MODULE_GROUPS;
 
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-card/40 backdrop-blur-xl">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border">
-        <div className="relative">
-          <div className="absolute inset-0 bg-primary/40 blur-lg rounded-lg" />
-          <div className="relative grid place-items-center w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-success text-primary-foreground">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="flex flex-col leading-tight">
-          <span className="font-semibold tracking-tight text-foreground">TraderOS</span>
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Operating System</span>
-        </div>
+        <BrandLogo />
       </div>
 
       {/* Nav */}
@@ -98,7 +54,7 @@ export function Sidebar({
               {g}
             </div>
             <div className="space-y-0.5">
-              {nav.filter((n) => n.group === g).map((n) => {
+              {MODULES.filter((n) => n.group === g).map((n) => {
                 const Icon = n.icon;
                 const isActive = active === n.key;
                 return (
@@ -178,7 +134,7 @@ export function MobileNav({
   onSelect: (k: ModuleKey) => void;
 }) {
   // Show a curated set of the most important modules in the mobile nav
-  const mobileNav = nav.filter((n) =>
+  const mobileNav = MODULES.filter((n) =>
     ['dashboard', 'journal', 'analytics', 'chat', 'risk'].includes(n.key)
   );
 

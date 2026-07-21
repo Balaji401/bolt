@@ -19,21 +19,8 @@ import { AuthPage } from '@/components/auth-page';
 import { PlanModal } from '@/components/plan-modal';
 import { useAuth } from '@/components/auth-provider';
 import { supabase, type Trade, type AiInsight, type OpenPosition, type TradingGoal } from '@/lib/supabase';
-
-const META: Record<ModuleKey, { title: string; subtitle: string }> = {
-  dashboard:    { title: 'Dashboard',           subtitle: 'Your trading command center' },
-  journal:      { title: 'Trading Journal',     subtitle: 'Every trade, fully documented' },
-  analytics:    { title: 'Performance Analytics', subtitle: 'Deep insights into your edge' },
-  risk:         { title: 'Risk Management',     subtitle: 'Professional calculators for every position' },
-  coach:        { title: 'AI Trading Coach',    subtitle: 'Personalized insights to improve your trading' },
-  chat:         { title: 'AI Trading Assistant', subtitle: 'Ask anything about your trades — get instant answers' },
-  achievements: { title: 'Achievements',        subtitle: 'Gamified milestones for your trading journey' },
-  plan:         { title: 'Trading Plan',        subtitle: 'Define your rules, follow your plan' },
-  psychology:   { title: 'Trading Psychology',  subtitle: 'Track and improve your mental game' },
-  calendar:     { title: 'Economic Calendar',   subtitle: 'Market-moving events at a glance' },
-  news:         { title: 'News Center',         subtitle: 'AI-curated financial news' },
-  brokers:      { title: 'Broker Connections',  subtitle: 'Auto-sync trades from your trading accounts' },
-};
+import { getModuleMeta } from '@/lib/module-registry';
+import { emit } from '@/lib/event-bus';
 
 export default function Home() {
   const { user, loading: authLoading, signOut, profile, subscription, refresh } = useAuth();
@@ -44,6 +31,11 @@ export default function Home() {
   const [goals, setGoals]       = useState<TradingGoal[]>([]);
   const [loading, setLoading]   = useState(true);
   const [showPlans, setShowPlans] = useState(false);
+
+  const handleSelect = (key: ModuleKey) => {
+    setActive(key);
+    emit('module:changed', key);
+  };
 
   const load = useCallback(async () => {
     const [t, i, p, g] = await Promise.all([
@@ -81,13 +73,13 @@ export default function Home() {
   if (!user) return <AuthPage />;
 
   const tier = subscription?.plan_tier || profile?.plan_tier || 'free';
-  const { title, subtitle } = META[active];
+  const { meta: { title, subtitle } } = getModuleMeta(active);
 
   return (
     <div className="flex min-h-screen">
       <Sidebar
         active={active}
-        onSelect={setActive}
+        onSelect={handleSelect}
         onShowPlans={() => setShowPlans(true)}
         onSignOut={signOut}
         profile={profile}
@@ -99,7 +91,7 @@ export default function Home() {
           title={title}
           subtitle={subtitle}
           onShowPlans={() => setShowPlans(true)}
-          onOpenChat={() => setActive('chat')}
+          onOpenChat={() => handleSelect('chat')}
           onAdd={active === 'journal' ? () => {} : undefined}
         />
 
@@ -130,7 +122,7 @@ export default function Home() {
         </main>
       </div>
 
-      <MobileNav active={active} onSelect={setActive} />
+      <MobileNav active={active} onSelect={handleSelect} />
       {showPlans && <PlanModal onClose={() => setShowPlans(false)} onUpgraded={refresh} />}
     </div>
   );

@@ -1,34 +1,78 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { emit } from '@/lib/event-bus';
 
-type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'light' | 'system';
+type ResolvedTheme = 'dark' | 'light';
 
-const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({
+const ThemeContext = createContext<{
+  theme: Theme;
+  resolvedTheme: ResolvedTheme;
+  setTheme: (t: Theme) => void;
+  toggle: () => void;
+}>({
   theme: 'dark',
+  resolvedTheme: 'dark',
+  setTheme: () => {},
   toggle: () => {},
 });
 
+const STORAGE_KEY = 'traderos-theme';
+
+function getSystemTheme(): ResolvedTheme {
+  if (typeof window === 'undefined') return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(resolved: ResolvedTheme) {
+  const html = document.documentElement;
+  html.classList.remove('dark', 'light');
+  html.classList.add(resolved);
+  html.style.colorScheme = resolved;
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setThemeState] = useState<Theme>('dark');
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('dark');
 
   useEffect(() => {
-    const stored = localStorage.getItem('traderos-theme') as Theme | null;
-    if (stored === 'light' || stored === 'dark') {
-      setTheme(stored);
-      applyTheme(stored);
-    }
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const initial = stored || 'dark';
+    setThemeState(initial);
+    const resolved = initial === 'system' ? getSystemTheme() : initial;
+    setResolvedTheme(resolved);
+    applyTheme(resolved);
   }, []);
 
-  const toggle = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    localStorage.setItem('traderos-theme', next);
-    applyTheme(next);
-  };
+  useEffect(() => {
+    if (theme !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      const resolved = getSystemTheme();
+      setResolvedTheme(resolved);
+      applyTheme(resolved);
+      emit('theme:changed', resolved);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [theme]);
+
+  const setTheme = useCallback((t: Theme) => {
+    setThemeState(t);
+    localStorage.setItem(STORAGE_KEY, t);
+    const resolved = t === 'system' ? getSystemTheme() : t;
+    setResolvedTheme(resolved);
+    applyTheme(resolved);
+    emit('theme:changed', resolved);
+  }, []);
+
+  const toggle = useCallback(() => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  }, [resolvedTheme, setTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggle }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -36,15 +80,4 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   return useContext(ThemeContext);
-}
-
-function applyTheme(theme: Theme) {
-  const html = document.documentElement;
-  if (theme === 'light') {
-    html.classList.remove('dark');
-    html.classList.add('light');
-  } else {
-    html.classList.remove('light');
-    html.classList.add('dark');
-  }
 }

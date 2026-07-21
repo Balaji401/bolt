@@ -19,7 +19,7 @@ export function Topbar({
   onShowPlans?: () => void;
   onOpenChat?: () => void;
 }) {
-  const { theme, toggle } = useTheme();
+  const { resolvedTheme, toggle } = useTheme();
   const { timezone, setTimezone, formatTime } = useTimezone();
   const [now, setNow] = useState(new Date());
   const [tzOpen, setTzOpen] = useState(false);
@@ -130,10 +130,10 @@ export function Topbar({
         {/* Theme toggle */}
         <button
           onClick={toggle}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
         >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
         {/* AI Chat shortcut */}

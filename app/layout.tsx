@@ -4,18 +4,18 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/components/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TimezoneProvider } from '@/components/timezone-provider';
+import { brand } from '@/lib/brand';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'TraderOS — The Operating System for Traders',
-  description:
-    'TraderOS is the complete operating system for traders. Plan, execute, journal, analyze, and improve — all in one intelligent ecosystem.',
-  metadataBase: new URL('https://traderos.app'),
+  title: `${brand.name} — ${brand.tagline}`,
+  description: brand.description,
+  metadataBase: new URL(brand.url),
   openGraph: {
-    title: 'TraderOS',
-    description: 'The complete operating system for traders.',
-    images: [{ url: 'https://bolt.new/static/og_default.png' }],
+    title: brand.name,
+    description: brand.tagline,
+    images: [{ url: brand.social.ogImage }],
   },
 };
 
