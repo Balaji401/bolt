@@ -4,20 +4,26 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Bell, Plus, Crown, Sun, Moon, MessageSquare, Globe, ChevronDown, Check } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import { useTimezone, COMMON_TIMEZONES } from '@/components/timezone-provider';
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { cn } from '@/lib/utils';
+import type { ModuleKey } from '@/lib/module-registry';
 
 export function Topbar({
   title,
   subtitle,
+  active,
   onAdd,
   onShowPlans,
   onOpenChat,
+  onOpenSearch,
 }: {
   title: string;
   subtitle?: string;
+  active: ModuleKey;
   onAdd?: () => void;
   onShowPlans?: () => void;
   onOpenChat?: () => void;
+  onOpenSearch?: () => void;
 }) {
   const { resolvedTheme, toggle } = useTheme();
   const { timezone, setTimezone, formatTime } = useTimezone();
@@ -49,23 +55,32 @@ export function Topbar({
     <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="h-full px-4 lg:px-8 flex items-center gap-3">
         <div className="flex-1 min-w-0">
+          <Breadcrumbs active={active} className="mb-0.5 hidden sm:flex" />
           <h1 className="text-lg font-semibold tracking-tight truncate">{title}</h1>
           {subtitle && (
             <p className="text-xs text-muted-foreground truncate hidden sm:block">{subtitle}</p>
           )}
         </div>
 
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/60 border border-border w-64 hover:border-primary/40 transition-colors focus-within:border-primary/60">
+        {/* Search trigger */}
+        <button
+          onClick={onOpenSearch}
+          className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/60 border border-border w-64 hover:border-primary/40 transition-colors focus-within:border-primary/60 text-left"
+        >
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-          <input
-            placeholder="Search trades, instruments..."
-            className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted-foreground"
-          />
+          <span className="text-sm text-muted-foreground flex-1">Search trades, instruments...</span>
           <kbd className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 hidden lg:block">
             ⌘K
           </kbd>
-        </div>
+        </button>
+
+        {/* Mobile search icon */}
+        <button
+          onClick={onOpenSearch}
+          className="md:hidden p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Search className="w-4 h-4" />
+        </button>
 
         {/* Timezone + Live Clock */}
         <div className="relative" ref={tzRef}>

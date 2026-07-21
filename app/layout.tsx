@@ -4,6 +4,8 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/components/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TimezoneProvider } from '@/components/timezone-provider';
+import { ConfigProvider } from '@/components/config-provider';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { brand } from '@/lib/brand';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -25,7 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} min-h-screen`}>
         <ThemeProvider>
           <TimezoneProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <ConfigProvider>
+              <ErrorBoundary>
+                <AuthProvider>{children}</AuthProvider>
+              </ErrorBoundary>
+            </ConfigProvider>
           </TimezoneProvider>
         </ThemeProvider>
       </body>

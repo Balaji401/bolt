@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Sidebar, MobileNav, type ModuleKey } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
+import { CommandPalette } from '@/components/command-palette';
 import { Dashboard } from '@/components/modules/dashboard';
 import { Journal } from '@/components/modules/journal';
 import { Analytics } from '@/components/modules/analytics';
@@ -15,27 +16,31 @@ import { Psychology } from '@/components/modules/psychology';
 import { EconomicCalendar } from '@/components/modules/calendar';
 import { NewsCenter } from '@/components/modules/news';
 import { Brokers } from '@/components/modules/brokers';
+import { ComingSoon } from '@/components/modules/coming-soon';
 import { AuthPage } from '@/components/auth-page';
 import { PlanModal } from '@/components/plan-modal';
 import { useAuth } from '@/components/auth-provider';
 import { supabase, type Trade, type AiInsight, type OpenPosition, type TradingGoal } from '@/lib/supabase';
 import { getModuleMeta } from '@/lib/module-registry';
 import { emit } from '@/lib/event-bus';
+import { logger } from '@/lib/logger';
 
 export default function Home() {
   const { user, loading: authLoading, signOut, profile, subscription, refresh } = useAuth();
-  const [active, setActive]     = useState<ModuleKey>('dashboard');
-  const [trades, setTrades]     = useState<Trade[]>([]);
+  const [active, setActive] = useState<ModuleKey>('dashboard');
+  const [trades, setTrades] = useState<Trade[]>([]);
   const [insights, setInsights] = useState<AiInsight[]>([]);
   const [positions, setPositions] = useState<OpenPosition[]>([]);
-  const [goals, setGoals]       = useState<TradingGoal[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [goals, setGoals] = useState<TradingGoal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showPlans, setShowPlans] = useState(false);
+  const [showCommand, setShowCommand] = useState(false);
 
-  const handleSelect = (key: ModuleKey) => {
+  const handleSelect = useCallback((key: ModuleKey) => {
     setActive(key);
-    emit('module:changed', key);
-  };
+    emit('module:changed', key, 'page');
+    logger.info('Navigation', `Module changed: ${key}`);
+  }, []);
 
   const load = useCallback(async () => {
     const [t, i, p, g] = await Promise.all([
@@ -52,6 +57,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => { if (user) load(); }, [user, load]);
+
+  // Listen for command palette open shortcut
+  useEffect(() => {
+    const handler = () => setShowCommand(true);
+    window.addEventListener('traderos:open-command-palette', handler);
+    return () => window.removeEventListener('traderos:open-command-palette', handler);
+  }, []);
 
   if (authLoading) {
     return (
@@ -75,6 +87,24 @@ export default function Home() {
   const tier = subscription?.plan_tier || profile?.plan_tier || 'free';
   const { meta: { title, subtitle } } = getModuleMeta(active);
 
+  const renderModule = () => {
+    switch (active) {
+      case 'dashboard':    return <Dashboard trades={trades} insights={insights} positions={positions} goals={goals} />;
+      case 'journal':      return <Journal trades={trades} onMutated={load} />;
+      case 'analytics':    return <Analytics trades={trades} />;
+      case 'risk':         return <RiskManagement />;
+      case 'coach':        return <Coach trades={trades} insights={insights} onRegenerated={load} />;
+      case 'chat':         return <AiChat trades={trades} />;
+      case 'achievements': return <Achievements trades={trades} />;
+      case 'plan':         return <Plan />;
+      case 'psychology':   return <Psychology />;
+      case 'calendar':     return <EconomicCalendar />;
+      case 'news':         return <NewsCenter />;
+      case 'brokers':      return <Brokers />;
+      default:             return <ComingSoon moduleKey={active} />;
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
       <Sidebar
@@ -90,8 +120,10 @@ export default function Home() {
         <Topbar
           title={title}
           subtitle={subtitle}
+          active={active}
           onShowPlans={() => setShowPlans(true)}
           onOpenChat={() => handleSelect('chat')}
+          onOpenSearch={() => setShowCommand(true)}
           onAdd={active === 'journal' ? () => {} : undefined}
         />
 
@@ -104,26 +136,21 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <>
-              {active === 'dashboard'    && <Dashboard trades={trades} insights={insights} positions={positions} goals={goals} />}
-              {active === 'journal'      && <Journal trades={trades} onMutated={load} />}
-              {active === 'analytics'   && <Analytics trades={trades} />}
-              {active === 'risk'        && <RiskManagement />}
-              {active === 'coach'       && <Coach trades={trades} insights={insights} onRegenerated={load} />}
-              {active === 'chat'        && <AiChat trades={trades} />}
-              {active === 'achievements' && <Achievements trades={trades} />}
-              {active === 'plan'        && <Plan />}
-              {active === 'psychology'  && <Psychology />}
-              {active === 'calendar'    && <EconomicCalendar />}
-              {active === 'news'        && <NewsCenter />}
-              {active === 'brokers'     && <Brokers />}
-            </>
+            renderModule()
           )}
         </main>
       </div>
 
       <MobileNav active={active} onSelect={handleSelect} />
       {showPlans && <PlanModal onClose={() => setShowPlans(false)} onUpgraded={refresh} />}
+      <CommandPalette
+        open={showCommand}
+        onClose={() => setShowCommand(false)}
+        onNavigate={handleSelect}
+        onNewTrade={() => handleSelect('journal')}
+        onImportTrades={() => handleSelect('brokers')}
+        onOpenChat={() => handleSelect('chat')}
+      />
     </div>
   );
 }

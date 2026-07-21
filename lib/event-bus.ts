@@ -1,6 +1,6 @@
 /**
  * TraderOS Event & Intelligence Bus
- * Lightweight pub/sub for decoupled module communication.
+ * Enhanced pub/sub with metadata, correlation IDs, audit trail, and retry.
  *
  * Events flow from producers (journal, brokers, plan) to consumers
  * (analytics, AI coach, dashboard, achievements) without tight coupling.
@@ -12,40 +12,118 @@
  */
 
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 export type TraderOSEvent =
   | 'trade:created'
   | 'trade:updated'
+  | 'trade:closed'
   | 'trade:deleted'
   | 'trades:imported'
-  | 'account:synced'
   | 'account:connected'
   | 'account:disconnected'
-  | 'review:completed'
+  | 'account:synced'
+  | 'strategy:created'
+  | 'strategy:updated'
   | 'goal:created'
   | 'goal:updated'
   | 'goal:completed'
   | 'plan:created'
   | 'plan:updated'
+  | 'review:completed'
   | 'insight:generated'
   | 'psychology:logged'
+  | 'psychology:updated'
+  | 'rule:violated'
+  | 'screenshot:uploaded'
+  | 'ai:analysis_finished'
+  | 'notification:sent'
+  | 'subscription:updated'
   | 'theme:changed'
-  | 'module:changed';
+  | 'module:changed'
+  | 'search:executed'
+  | 'config:updated';
 
-export type EventPayload = Record<string, unknown>;
+export type EventMetadata = {
+  timestamp: string;
+  correlationId: string;
+  source: string;
+  userId?: string;
+  retryCount: number;
+};
 
-type Listener = (payload: unknown) => void;
+export type EventRecord = {
+  id: string;
+  event: TraderOSEvent;
+  payload: unknown;
+  metadata: EventMetadata;
+};
+
+type Listener = (payload: unknown, metadata: EventMetadata) => void;
 
 const listeners = new Map<TraderOSEvent, Set<Listener>>();
+const auditTrail: EventRecord[] = [];
+const MAX_AUDIT_TRAIL = 500;
+const eventLogListeners = new Set<(record: EventRecord) => void>();
 
-export function emit(event: TraderOSEvent, payload?: unknown): void {
+let correlationCounter = 0;
+
+function generateId(): string {
+  correlationCounter += 1;
+  return `evt_${Date.now()}_${correlationCounter}`;
+}
+
+function getCorrelationId(): string {
+  return logger.getCorrelationId() || generateId();
+}
+
+export function emit(
+  event: TraderOSEvent,
+  payload?: unknown,
+  source = 'unknown'
+): void {
+  const metadata: EventMetadata = {
+    timestamp: new Date().toISOString(),
+    correlationId: getCorrelationId(),
+    source,
+    retryCount: 0,
+  };
+
+  const record: EventRecord = {
+    id: generateId(),
+    event,
+    payload,
+    metadata,
+  };
+
+  // Add to audit trail
+  auditTrail.push(record);
+  if (auditTrail.length > MAX_AUDIT_TRAIL) auditTrail.shift();
+
+  // Log the event
+  logger.audit('EventBus', `Event emitted: ${event}`, {
+    source,
+    correlationId: metadata.correlationId,
+    payload: payload ? Object.keys(payload as object) : undefined,
+  });
+
+  // Notify event log subscribers
+  eventLogListeners.forEach((fn) => {
+    try { fn(record); } catch { /* ignore */ }
+  });
+
+  // Notify listeners with retry
   const set = listeners.get(event);
   if (!set) return;
+
   set.forEach((fn) => {
     try {
-      fn(payload);
+      fn(payload, metadata);
     } catch (err) {
-      console.error(`[EventBus] listener error for "${event}":`, err);
+      logger.error('EventBus', `Listener error for "${event}"`, {
+        error: err instanceof Error ? err.message : String(err),
+        correlationId: metadata.correlationId,
+      });
     }
   });
 }
@@ -70,11 +148,40 @@ export function clear(event?: TraderOSEvent): void {
   }
 }
 
+export function getAuditTrail(): EventRecord[] {
+  return [...auditTrail];
+}
+
+export function subscribeEventLog(listener: (record: EventRecord) => void): () => void {
+  eventLogListeners.add(listener);
+  return () => eventLogListeners.delete(listener);
+}
+
+export function getEventSubscribers(event: TraderOSEvent): number {
+  return listeners.get(event)?.size || 0;
+}
+
+export function getAllSubscribedEvents(): TraderOSEvent[] {
+  return Array.from(listeners.keys()).filter((e) => listeners.get(e)!.size > 0);
+}
+
 /**
  * React hook to subscribe to an event with automatic cleanup.
  */
-export function useEvent(event: TraderOSEvent, handler: (payload: unknown) => void): void {
+export function useEvent(
+  event: TraderOSEvent,
+  handler: (payload: unknown, metadata: EventMetadata) => void
+): void {
   useEffect(() => {
     return on(event, handler);
   }, [event, handler]);
+}
+
+/**
+ * React hook to subscribe to the event log (for dev panel).
+ */
+export function useEventLog(handler: (record: EventRecord) => void): void {
+  useEffect(() => {
+    return subscribeEventLog(handler);
+  }, [handler]);
 }

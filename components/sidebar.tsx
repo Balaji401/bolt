@@ -1,9 +1,10 @@
 'use client';
 
-import { Crown, LogOut, User, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Crown, LogOut, User, ChevronRight, ChevronDown, Star, Clock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Profile, PlanTier } from '@/lib/supabase';
-import { MODULES, MODULE_GROUPS, type ModuleKey } from '@/lib/module-registry';
+import { MODULES, MODULE_GROUPS, type ModuleKey, type ModuleMeta } from '@/lib/module-registry';
 import { BrandLogo } from '@/components/brand/brand-logo';
 
 export type { ModuleKey };
@@ -14,6 +15,25 @@ const TIER_COLORS: Record<PlanTier, string> = {
   pro:     'text-primary',
   elite:   'text-warning',
 };
+
+const FAV_KEY = 'traderos-favorites';
+const RECENT_KEY = 'traderos-recent-modules';
+const COLLAPSED_KEY = 'traderos-collapsed-groups';
+
+function loadFavorites(): ModuleKey[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch { return []; }
+}
+
+function loadRecent(): ModuleKey[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
+}
+
+function loadCollapsed(): string[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]'); } catch { return []; }
+}
 
 export function Sidebar({
   active,
@@ -30,6 +50,48 @@ export function Sidebar({
   profile: Profile | null;
   tier: PlanTier;
 }) {
+  const [favorites, setFavorites] = useState<ModuleKey[]>([]);
+  const [recent, setRecent] = useState<ModuleKey[]>([]);
+  const [collapsed, setCollapsed] = useState<string[]>([]);
+  const [showFavModal, setShowFavModal] = useState(false);
+
+  useEffect(() => {
+    setFavorites(loadFavorites());
+    setRecent(loadRecent());
+    setCollapsed(loadCollapsed());
+  }, []);
+
+  // Track recently visited modules
+  useEffect(() => {
+    if (!active) return;
+    setRecent((prev) => {
+      const filtered = prev.filter((k) => k !== active);
+      const next = [active, ...filtered].slice(0, 4);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, [active]);
+
+  const toggleFavorite = useCallback((key: ModuleKey) => {
+    setFavorites((prev) => {
+      const exists = prev.includes(key);
+      const next = exists ? prev.filter((k) => k !== key) : [...prev, key];
+      localStorage.setItem(FAV_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const toggleCollapse = useCallback((group: string) => {
+    setCollapsed((prev) => {
+      const exists = prev.includes(group);
+      const next = exists ? prev.filter((g) => g !== group) : [...prev, group];
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const isFavorite = (key: ModuleKey) => favorites.includes(key);
+
   const initials = (profile?.display_name || 'T')
     .split(' ')
     .map((w) => w[0])
@@ -37,7 +99,20 @@ export function Sidebar({
     .join('')
     .toUpperCase();
   const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-  const groups = MODULE_GROUPS;
+
+  const visibleModules = MODULES.filter((m) => {
+    if (m.visibility === 'admin') return false;
+    if (m.visibility === 'elite') return tier === 'elite';
+    if (m.visibility === 'pro') return ['pro', 'elite'].includes(tier);
+    return true;
+  });
+
+  const favoriteModules = favorites
+    .map((k) => MODULES.find((m) => m.key === k))
+    .filter(Boolean) as ModuleMeta[];
+  const recentModules = recent
+    .map((k) => MODULES.find((m) => m.key === k))
+    .filter((m) => m && m.key !== active) as ModuleMeta[];
 
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-card/40 backdrop-blur-xl">
@@ -47,43 +122,81 @@ export function Sidebar({
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-4 space-y-5">
-        {groups.map((g) => (
-          <div key={g}>
-            <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {g}
+      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-1">
+        {/* Favorites */}
+        {favoriteModules.length > 0 && (
+          <div className="mb-3">
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              <Star className="w-3 h-3 text-warning" /> Favorites
             </div>
             <div className="space-y-0.5">
-              {MODULES.filter((n) => n.group === g).map((n) => {
-                const Icon = n.icon;
-                const isActive = active === n.key;
-                return (
-                  <button
-                    key={n.key}
-                    onClick={() => onSelect(n.key)}
-                    className={cn(
-                      'group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150',
-                      isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-                    )}
-                  >
-                    {isActive && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
-                    )}
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span className="font-medium flex-1 text-left">{n.label}</span>
-                    {n.badge && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary uppercase tracking-wide">
-                        {n.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {favoriteModules.map((n) => (
+                <NavButton
+                  key={n.key}
+                  meta={n}
+                  active={active === n.key}
+                  onSelect={onSelect}
+                  isFav={true}
+                  onToggleFav={toggleFavorite}
+                />
+              ))}
             </div>
           </div>
-        ))}
+        )}
+
+        {/* Recent */}
+        {recentModules.length > 0 && (
+          <div className="mb-3">
+            <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              <Clock className="w-3 h-3" /> Recent
+            </div>
+            <div className="space-y-0.5">
+              {recentModules.map((n) => (
+                <NavButton
+                  key={n.key}
+                  meta={n}
+                  active={active === n.key}
+                  onSelect={onSelect}
+                  isFav={isFavorite(n.key)}
+                  onToggleFav={toggleFavorite}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Groups */}
+        {MODULE_GROUPS.map((g) => {
+          const groupModules = visibleModules.filter((m) => m.group === g);
+          if (groupModules.length === 0) return null;
+          const isCollapsed = collapsed.includes(g);
+
+          return (
+            <div key={g}>
+              <button
+                onClick={() => toggleCollapse(g)}
+                className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {g}
+                {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {!isCollapsed && (
+                <div className="space-y-0.5 mt-0.5">
+                  {groupModules.map((n) => (
+                    <NavButton
+                      key={n.key}
+                      meta={n}
+                      active={active === n.key}
+                      onSelect={onSelect}
+                      isFav={isFavorite(n.key)}
+                      onToggleFav={toggleFavorite}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Footer */}
@@ -126,6 +239,62 @@ export function Sidebar({
   );
 }
 
+function NavButton({
+  meta,
+  active,
+  onSelect,
+  isFav,
+  onToggleFav,
+}: {
+  meta: ModuleMeta;
+  active: boolean;
+  onSelect: (k: ModuleKey) => void;
+  isFav: boolean;
+  onToggleFav: (k: ModuleKey) => void;
+}) {
+  const Icon = meta.icon;
+  return (
+    <div className="group relative">
+      <button
+        onClick={() => onSelect(meta.key)}
+        className={cn(
+          'group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 pr-8',
+          active
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+        )}
+      >
+        {active && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />
+        )}
+        <Icon className="w-4 h-4 shrink-0" />
+        <span className="font-medium flex-1 text-left">{meta.label}</span>
+        {meta.badge && (
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary uppercase tracking-wide">
+            {meta.badge}
+          </span>
+        )}
+        {meta.comingSoon && !meta.badge && (
+          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground uppercase tracking-wide">
+            Soon
+          </span>
+        )}
+      </button>
+      {/* Favorite toggle */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggleFav(meta.key); }}
+        className={cn(
+          'absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded transition-all',
+          isFav ? 'opacity-100 text-warning' : 'opacity-0 group-hover:opacity-60 text-muted-foreground hover:opacity-100'
+        )}
+        title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        <Star className={cn('w-3 h-3', isFav && 'fill-warning')} />
+      </button>
+    </div>
+  );
+}
+
 export function MobileNav({
   active,
   onSelect,
@@ -133,7 +302,6 @@ export function MobileNav({
   active: ModuleKey;
   onSelect: (k: ModuleKey) => void;
 }) {
-  // Show a curated set of the most important modules in the mobile nav
   const mobileNav = MODULES.filter((n) =>
     ['dashboard', 'journal', 'analytics', 'chat', 'risk'].includes(n.key)
   );
