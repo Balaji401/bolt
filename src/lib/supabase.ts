@@ -178,3 +178,41 @@ export type Subscription = {
 };
 
 export type PlanTier = 'free' | 'starter' | 'pro' | 'elite';
+
+export type Workspace = {
+  id: string;
+  user_id: string;
+  name: string;
+  workspace_type: 'personal' | 'team';
+  default_currency: string;
+  default_timezone: string;
+  date_format: string;
+  number_format: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TradingAccountPlatform = 'MT4' | 'MT5' | 'cTrader' | 'DXtrade' | 'Match-Trader' | 'TradingView' | 'Manual';
+export type TradingAccountType = 'live' | 'demo' | 'prop_funded' | 'evaluation';
+export type TradingAccountStatus = 'active' | 'archived' | 'closed';
+
+export type TradingAccount = {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  account_name: string;
+  broker_name: string | null;
+  platform: TradingAccountPlatform;
+  account_number: string | null;
+  account_type: TradingAccountType;
+  base_currency: string;
+  timezone: string;
+  initial_balance: number;
+  current_balance: number;
+  status: TradingAccountStatus;
+  is_default: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};

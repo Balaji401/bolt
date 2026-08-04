@@ -91,7 +91,7 @@ function NavButton({ meta, active, onSelect, isFav, onToggleFav }: { meta: Modul
 }
 
 export function MobileNav({ active, onSelect }: { active: ModuleKey; onSelect: (k: ModuleKey) => void }) {
-  const mobileNav = MODULES.filter((n) => ['dashboard', 'journal', 'analytics', 'chat', 'risk'].includes(n.key));
+  const mobileNav = MODULES.filter((n) => ['dashboard', 'journal', 'analytics', 'accounts', 'chat', 'risk'].includes(n.key));
   return (
     <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 glass-strong border-t border-border">
       <div className="flex items-center justify-around px-2 py-1.5">

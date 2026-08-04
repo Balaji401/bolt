@@ -1,25 +1,37 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Plus, Crown, Sun, Moon, MessageSquare, Globe, ChevronDown, Check } from 'lucide-react';
+import { Search, Bell, Plus, Crown, Sun, Moon, MessageSquare, Globe, ChevronDown, Check, Wallet } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import { useTimezone, COMMON_TIMEZONES } from '@/components/timezone-provider';
+import { useWorkspace } from '@/components/workspace-provider';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { cn } from '@/lib/utils';
 import type { ModuleKey } from '@/lib/module-registry';
 
-export function Topbar({ title, subtitle, active, onAdd, onShowPlans, onOpenChat, onOpenSearch }: { title: string; subtitle?: string; active: ModuleKey; onAdd?: () => void; onShowPlans?: () => void; onOpenChat?: () => void; onOpenSearch?: () => void; }) {
+export function Topbar({ title, subtitle, active, onAdd, onShowPlans, onOpenChat, onOpenSearch, onNavigateAccounts }: { title: string; subtitle?: string; active: ModuleKey; onAdd?: () => void; onShowPlans?: () => void; onOpenChat?: () => void; onOpenSearch?: () => void; onNavigateAccounts?: () => void; }) {
   const { resolvedTheme, toggle } = useTheme();
   const { timezone, setTimezone, formatTime } = useTimezone();
+  const { accounts, activeAccount, setActiveAccountId } = useWorkspace();
   const [now, setNow] = useState(new Date());
   const [tzOpen, setTzOpen] = useState(false);
   const [tzSearch, setTzSearch] = useState('');
+  const [acctOpen, setAcctOpen] = useState(false);
   const tzRef = useRef<HTMLDivElement>(null);
+  const acctRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { const i = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(i); }, []);
-  useEffect(() => { const h = (e: MouseEvent) => { if (tzRef.current && !tzRef.current.contains(e.target as Node)) setTzOpen(false); }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h); }, []);
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (tzRef.current && !tzRef.current.contains(e.target as Node)) setTzOpen(false);
+      if (acctRef.current && !acctRef.current.contains(e.target as Node)) setAcctOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
 
   const filteredTzs = COMMON_TIMEZONES.filter((tz) => tz.label.toLowerCase().includes(tzSearch.toLowerCase()) || tz.value.toLowerCase().includes(tzSearch.toLowerCase()));
   const currentTz = COMMON_TIMEZONES.find((tz) => tz.value === timezone) || COMMON_TIMEZONES[0];
+  const activeAccounts = accounts.filter((a) => a.status === 'active');
 
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -29,6 +41,48 @@ export function Topbar({ title, subtitle, active, onAdd, onShowPlans, onOpenChat
           <h1 className="text-lg font-semibold tracking-tight truncate">{title}</h1>
           {subtitle && <p className="text-xs text-muted-foreground truncate hidden sm:block">{subtitle}</p>}
         </div>
+
+        {/* Account switcher */}
+        <div className="relative" ref={acctRef}>
+          <button onClick={() => setAcctOpen((v) => !v)} className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors max-w-[180px] sm:max-w-none" title="Switch trading account">
+            <Wallet className="w-4 h-4 shrink-0" />
+            <div className="hidden sm:flex flex-col items-start leading-tight min-w-0">
+              <span className="text-xs font-medium text-foreground truncate max-w-[120px]">{activeAccount?.account_name || 'No account'}</span>
+              <span className="text-[9px] text-muted-foreground">{activeAccount?.platform || 'Select...'}</span>
+            </div>
+            <ChevronDown className={cn('w-3 h-3 transition-transform shrink-0', acctOpen && 'rotate-180')} />
+          </button>
+          {acctOpen && (
+            <div className="absolute right-0 top-full mt-2 w-72 glass-strong rounded-xl border border-border shadow-xl z-50 animate-fade-in overflow-hidden">
+              <div className="px-3 py-2 border-b border-border">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Switch Account</span>
+              </div>
+              <div className="max-h-64 overflow-y-auto scrollbar-thin py-1">
+                {activeAccounts.length === 0 ? (
+                  <div className="px-3 py-4 text-xs text-muted-foreground text-center">No active accounts. Create one in the Accounts page.</div>
+                ) : (
+                  activeAccounts.map((acct) => (
+                    <button key={acct.id} onClick={() => { setActiveAccountId(acct.id); setAcctOpen(false); }} className={cn('w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-secondary/60 transition-colors', activeAccount?.id === acct.id && 'text-primary')}>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium truncate">{acct.account_name}</span>
+                        <span className="text-[10px] text-muted-foreground">{acct.platform} · {acct.base_currency}</span>
+                      </div>
+                      {activeAccount?.id === acct.id && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                    </button>
+                  ))
+                )}
+              </div>
+              {onNavigateAccounts && (
+                <div className="border-t border-border p-2">
+                  <button onClick={() => { onNavigateAccounts(); setAcctOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                    <Plus className="w-3.5 h-3.5" /> Manage Accounts
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <button onClick={onOpenSearch} className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/60 border border-border w-64 hover:border-primary/40 transition-colors focus-within:border-primary/60 text-left">
           <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground flex-1">Search trades, instruments...</span>

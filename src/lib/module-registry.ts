@@ -2,12 +2,13 @@ import {
   LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, Target,
   CalendarDays, Newspaper, HeartPulse, Plug, MessageSquare, Trophy,
   Brain, Crosshair, Layers, Building2, LineChart, Settings, ShieldCheck,
-  Network, type LucideIcon,
+  Network, Wallet, type LucideIcon,
 } from 'lucide-react';
 
 export type ModuleKey =
   | 'dashboard' | 'journal' | 'analytics' | 'risk' | 'coach' | 'chat'
   | 'achievements' | 'plan' | 'psychology' | 'calendar' | 'news' | 'brokers'
+  | 'accounts'
   | 'strategy_intelligence' | 'decision_intelligence' | 'multi_account_intelligence'
   | 'prop_firms' | 'market_intelligence' | 'ai_intelligence' | 'settings' | 'admin';
 
@@ -39,6 +40,7 @@ export const MODULES: ModuleMeta[] = [
   { key: 'market_intelligence', label: 'Market Intelligence', icon: LineChart, group: 'Intelligence', visibility: 'pro', meta: { title: 'Market Intelligence', subtitle: 'Market structure and sentiment analysis' }, keywords: ['market'], comingSoon: true },
   { key: 'ai_intelligence', label: 'AI Intelligence', icon: Brain, group: 'Intelligence', visibility: 'pro', meta: { title: 'AI Intelligence', subtitle: 'Advanced AI analysis and predictions' }, keywords: ['ai', 'ml'], comingSoon: true },
   { key: 'brokers', label: 'Broker Sync', icon: Plug, group: 'Connections', visibility: 'all', meta: { title: 'Broker Connections', subtitle: 'Auto-sync trades from your trading accounts' }, keywords: ['broker', 'mt4', 'mt5', 'binance'] },
+  { key: 'accounts', label: 'Accounts', icon: Wallet, group: 'Connections', visibility: 'all', meta: { title: 'Trading Accounts', subtitle: 'Manage your trading accounts across brokers and prop firms' }, keywords: ['account', 'mt4', 'mt5', 'ctrader', 'demo', 'live', 'prop'] },
   { key: 'multi_account_intelligence', label: 'Multi-Account', icon: Layers, group: 'Connections', visibility: 'elite', meta: { title: 'Multi-Account Intelligence', subtitle: 'Aggregate analytics across all accounts' }, keywords: ['multi', 'aggregate'], comingSoon: true },
   { key: 'prop_firms', label: 'Prop Firms', icon: Building2, group: 'Connections', visibility: 'pro', meta: { title: 'Prop Firm Intelligence', subtitle: 'Track prop firm challenges and rules' }, keywords: ['ftmo', 'prop'], comingSoon: true },
   { key: 'risk', label: 'Risk Management', icon: Calculator, group: 'Tools', visibility: 'all', meta: { title: 'Risk Management', subtitle: 'Professional calculators for every position' }, keywords: ['risk', 'position size'] },

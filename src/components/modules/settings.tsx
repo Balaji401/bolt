@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { User, Shield, Trash2, Mail, Clock, MapPin, DollarSign, Globe, Award, Camera, AlertTriangle, Eye, EyeOff, Check } from 'lucide-react';
+import { User, Shield, Trash2, Mail, Clock, MapPin, DollarSign, Globe, Award, Camera, AlertTriangle, Eye, EyeOff, Check, Layers } from 'lucide-react';
 import { useAuth } from '@/components/auth-provider';
+import { useWorkspace } from '@/components/workspace-provider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,15 +40,17 @@ export function Settings() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-        <p className="text-sm text-muted-foreground mt-1">Manage your account, profile, and security preferences.</p>
+        <p className="text-sm text-muted-foreground mt-1">Manage your account, profile, workspace, and security preferences.</p>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 max-w-md">
+        <TabsList className="grid w-full max-w-lg grid-cols-4">
           <TabsTrigger value="profile" className="gap-1.5"><User className="w-3.5 h-3.5" /> Profile</TabsTrigger>
+          <TabsTrigger value="workspace" className="gap-1.5"><Layers className="w-3.5 h-3.5" /> Workspace</TabsTrigger>
           <TabsTrigger value="security" className="gap-1.5"><Shield className="w-3.5 h-3.5" /> Security</TabsTrigger>
           <TabsTrigger value="account" className="gap-1.5"><Trash2 className="w-3.5 h-3.5" /> Account</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6"><ProfileTab profile={profile} user={user} updateProfile={updateProfile} timezone={timezone} setTimezone={setTimezone} /></TabsContent>
+        <TabsContent value="workspace" className="mt-6"><WorkspaceTab /></TabsContent>
         <TabsContent value="security" className="mt-6"><SecurityTab changePassword={changePassword} signOutAllDevices={signOutAllDevices} /></TabsContent>
         <TabsContent value="account" className="mt-6"><AccountTab profile={profile} user={user} deleteAccount={deleteAccount} /></TabsContent>
       </Tabs>
@@ -157,6 +160,100 @@ function ProfileTab({ profile, user, updateProfile, timezone, setTimezone }: {
         <Button onClick={handleSave} disabled={saving}>
           {saving ? <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Changes'}
         </Button>
+      </div>
+    </div>
+  );
+}
+
+const DATE_FORMATS = [
+  { value: 'MMM D, YYYY', label: 'Jan 15, 2026' },
+  { value: 'DD/MM/YYYY', label: '15/01/2026' },
+  { value: 'MM/DD/YYYY', label: '01/15/2026' },
+  { value: 'YYYY-MM-DD', label: '2026-01-15' },
+];
+const NUMBER_FORMATS = [
+  { value: 'en-US', label: '1,234.56 (US)' },
+  { value: 'de-DE', label: '1.234,56 (EU)' },
+  { value: 'ja-JP', label: '1,234.56 (JP)' },
+];
+
+function WorkspaceTab() {
+  const { workspace, accounts, updateWorkspace } = useWorkspace();
+  const [name, setName] = useState(workspace?.name || 'Personal');
+  const [currency, setCurrency] = useState(workspace?.default_currency || 'USD');
+  const [tz, setTz] = useState(workspace?.default_timezone || 'auto');
+  const [dateFormat, setDateFormat] = useState(workspace?.date_format || 'MMM D, YYYY');
+  const [numberFormat, setNumberFormat] = useState(workspace?.number_format || 'en-US');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    setSaving(true); setError(null); setSaved(false);
+    const result = await updateWorkspace({
+      name, default_currency: currency, default_timezone: tz,
+      date_format: dateFormat, number_format: numberFormat,
+    });
+    setSaving(false);
+    if (result.error) setError(result.error);
+    else setSaved(true);
+  };
+
+  const activeCount = accounts.filter((a) => a.status === 'active').length;
+  const archivedCount = accounts.filter((a) => a.status === 'archived').length;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader><CardTitle className="text-base">Workspace</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2"><Label htmlFor="ws_name">Workspace Name</Label><Input id="ws_name" value={name} onChange={(e) => setName(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Workspace Type</Label><Input value={workspace?.workspace_type === 'team' ? 'Team' : 'Personal'} disabled className="opacity-60 capitalize" /><p className="text-[10px] text-muted-foreground">Team workspaces coming soon.</p></div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Defaults</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Default Currency</Label>
+              <Select value={currency} onValueChange={setCurrency}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Default Timezone</Label>
+              <Select value={tz} onValueChange={setTz}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent className="max-h-64">{COMMON_TIMEZONES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Date Format</Label>
+              <Select value={dateFormat} onValueChange={setDateFormat}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{DATE_FORMATS.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent></Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Number Format</Label>
+              <Select value={numberFormat} onValueChange={setNumberFormat}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{NUMBER_FORMATS.map((n) => <SelectItem key={n.value} value={n.value}>{n.label}</SelectItem>)}</SelectContent></Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Summary</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div><div className="text-2xl font-bold text-primary">{accounts.length}</div><div className="text-xs text-muted-foreground">Total Accounts</div></div>
+            <div><div className="text-2xl font-bold text-success">{activeCount}</div><div className="text-xs text-muted-foreground">Active</div></div>
+            <div><div className="text-2xl font-bold text-muted-foreground">{archivedCount}</div><div className="text-xs text-muted-foreground">Archived</div></div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {error && <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2">{error}</div>}
+      {saved && <div className="text-sm text-success bg-success/10 border border-success/30 rounded-lg px-3 py-2 flex items-center gap-2"><Check className="w-4 h-4" /> Workspace settings saved.</div>}
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving}>{saving ? <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : 'Save Workspace'}</Button>
       </div>
     </div>
   );

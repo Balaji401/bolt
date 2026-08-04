@@ -15,10 +15,12 @@ import { Psychology } from '@/components/modules/psychology';
 import { EconomicCalendar } from '@/components/modules/calendar';
 import { NewsCenter } from '@/components/modules/news';
 import { Brokers } from '@/components/modules/brokers';
+import { Accounts } from '@/components/modules/accounts';
 import { Settings } from '@/components/modules/settings';
 import { ComingSoon } from '@/components/modules/coming-soon';
 import { AuthPage } from '@/components/auth-page';
 import { useAuth } from '@/components/auth-provider';
+import { WorkspaceProvider } from '@/components/workspace-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TimezoneProvider } from '@/components/timezone-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -104,32 +106,35 @@ function AppContent() {
       case 'calendar':     return <EconomicCalendar />;
       case 'news':         return <NewsCenter />;
       case 'brokers':      return <Brokers />;
+      case 'accounts':     return <Accounts />;
       case 'settings':     return <Settings />;
       default:             return <ComingSoon moduleKey={active} />;
     }
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar active={active} onSelect={handleSelect} onShowPlans={() => {}} onSignOut={signOut} profile={profile} tier={tier} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('chat')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => {} : undefined} />
-        <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 overflow-x-hidden">
-          {loading ? (
-            <div className="grid place-items-center h-64"><div className="flex items-center gap-3 text-muted-foreground"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Loading your trading workspace…</div></div>
-          ) : loadError ? (
-            <div className="grid place-items-center h-64 text-center">
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Failed to load your trading data.</p>
-                <Button onClick={load} variant="outline" size="sm">Retry</Button>
+    <WorkspaceProvider>
+      <div className="flex min-h-screen">
+        <Sidebar active={active} onSelect={handleSelect} onShowPlans={() => {}} onSignOut={signOut} profile={profile} tier={tier} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('chat')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => {} : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
+          <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 overflow-x-hidden">
+            {loading ? (
+              <div className="grid place-items-center h-64"><div className="flex items-center gap-3 text-muted-foreground"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Loading your trading workspace…</div></div>
+            ) : loadError ? (
+              <div className="grid place-items-center h-64 text-center">
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">Failed to load your trading data.</p>
+                  <Button onClick={load} variant="outline" size="sm">Retry</Button>
+                </div>
               </div>
-            </div>
-          ) : renderModule()}
-        </main>
+            ) : renderModule()}
+          </main>
+        </div>
+        <MobileNav active={active} onSelect={handleSelect} />
+        <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} onNavigate={handleSelect} onNewTrade={() => handleSelect('journal')} onImportTrades={() => handleSelect('brokers')} onOpenChat={() => handleSelect('chat')} />
       </div>
-      <MobileNav active={active} onSelect={handleSelect} />
-      <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} onNavigate={handleSelect} onNewTrade={() => handleSelect('journal')} onImportTrades={() => handleSelect('brokers')} onOpenChat={() => handleSelect('chat')} />
-    </div>
+    </WorkspaceProvider>
   );
 }
 
