@@ -16,15 +16,19 @@ import { emit } from '@/lib/event-bus';
 export function Plan() {
   const [goals, setGoals] = useState<TradingGoal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ title: '', goal_type: 'profit', target_value: '1000', period: 'monthly' });
 
-  useEffect(() => {
-    supabase.from('trading_goals').select('*').order('created_at', { ascending: false }).then(({ data }) => {
-      setGoals((data || []) as TradingGoal[]);
-      setLoading(false);
-    });
-  }, []);
+  const load = async () => {
+    setError(false);
+    const { data, error } = await supabase.from('trading_goals').select('*').order('created_at', { ascending: false });
+    if (error) { setError(true); setLoading(false); return; }
+    setGoals((data || []) as TradingGoal[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const addGoal = async () => {
     const { error } = await supabase.from('trading_goals').insert({
@@ -53,6 +57,7 @@ export function Plan() {
   };
 
   if (loading) return <div className="grid place-items-center h-64"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (error) return <div className="grid place-items-center h-64 text-center"><div className="space-y-3"><p className="text-sm text-muted-foreground">Failed to load goals.</p><Button onClick={load} variant="outline" size="sm">Retry</Button></div></div>;
 
   return (
     <div className="space-y-6">

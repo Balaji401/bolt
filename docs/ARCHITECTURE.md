@@ -1,58 +1,78 @@
-# TraderOS — Enterprise Architecture
+# TraderOS — Architecture
 
 > Living document. Updated as the foundation evolves.
 
-## 1. Current Architecture (Pre-Foundation Audit)
-
-### 1.1 Project Structure
+## 1. Project Structure
 
 ```
-app/                      Next.js 13 App Router (single route: /)
-  layout.tsx              Root layout: ThemeProvider → TimezoneProvider → AuthProvider
-  page.tsx                Single-page shell: sidebar + topbar + active module
-  globals.css             Tailwind layers + CSS variables (dark/light themes)
-components/
-  modules/                12 feature modules (dashboard, journal, analytics, …)
-  ui/                     shadcn/ui primitives (button, dialog, table, …) — 40+ components
-  auth-page.tsx           Landing + sign-in/sign-up
-  auth-provider.tsx       Supabase auth context
-  theme-provider.tsx      Dark/light toggle (localStorage)
-  timezone-provider.tsx   Timezone context + formatters
-  sidebar.tsx             Desktop sidebar + mobile bottom nav
-  topbar.tsx              Search, clock, theme toggle, notifications
-  stat-card.tsx           Reusable KPI card
-  plan-modal.tsx          Subscription upgrade flow
-lib/
-  supabase.ts             Supabase client + all domain types (Trade, Profile, …)
-  analytics.ts            computeMetrics() — pure function, 200+ metrics
-  instruments.ts          Instrument specs (pip size, contract size, category)
-  format.ts               Currency / date / number formatters
-  utils.ts                cn() class merge helper
+src/
+  App.tsx                 Root: ThemeProvider → TimezoneProvider → AuthProvider → ErrorBoundary
+  main.tsx                Vite entry point
+  index.css               Tailwind layers + CSS variables (dark/light themes)
+  vite-env.d.ts           Vite client type reference
+  components/
+    modules/              12 feature modules (dashboard, journal, analytics, …)
+    ui/                   shadcn/ui primitives (button, card, dialog, input, …)
+    brand/                BrandLogo, BrandMark
+    charts/               Theme-aware Recharts wrappers
+    feedback/             EmptyState, ErrorState, LoadingState, PageSkeleton, Spinner
+    auth-page.tsx          Landing + sign-in/sign-up
+    auth-provider.tsx     Supabase auth context
+    theme-provider.tsx    Dark/light/system toggle (localStorage)
+    timezone-provider.tsx Timezone context + formatters
+    sidebar.tsx           Desktop sidebar + mobile bottom nav
+    topbar.tsx            Search, clock, theme toggle, notifications
+    breadcrumbs.tsx       Navigation breadcrumbs
+    command-palette.tsx   Ctrl+K global search
+    error-boundary.tsx    Error boundary wrapper
+  lib/
+    supabase.ts           Supabase client + all domain types
+    analytics.ts          computeMetrics() — pure function, 200+ metrics
+    instruments.ts        Instrument specs (pip size, contract size, category)
+    format.ts             Currency / date / number formatters
+    utils.ts              cn() class merge helper
+    brand.ts              TraderOS brand config
+    design-tokens.ts      Spacing, radius, shadow, motion tokens
+    event-bus.ts          Event & Intelligence Bus (pub/sub)
+    feature-flags.ts      24 tier-based feature flags
+    logger.ts             Structured logger with audit trail
+    module-registry.ts    20 module metadata entries
+    search.ts             NLP search engine
+    validation.ts         Zod schemas
 supabase/
-  migrations/             5 SQL migrations (trades, brokers, profiles, email, achievements)
+  migrations/             5 SQL migrations
   functions/              2 edge functions (ai-chat, sync-to-sheets)
+docs/
+  ARCHITECTURE.md          This file
+  DESIGN-SYSTEM.md         Design system reference
+  COMPONENTS.md            Component library reference
+  CONFIGURATION.md         Configuration reference
+  DEVELOPER.md             Developer guide
+  EVENTS.md                Event bus reference
+  NAVIGATION.md            Navigation framework reference
+  SEARCH.md                Search engine reference
 ```
 
-### 1.2 Frontend
+## 2. Frontend
 
-- **Framework**: Next.js 13.5 (App Router), React 18, TypeScript 5.2
-- **Styling**: Tailwind CSS 3.3 + CSS variables (HSL color tokens) + `tailwindcss-animate`
-- **Components**: shadcn/ui (Radix primitives + CVA) — 40+ primitives in `components/ui/`
-- **Icons**: `lucide-react` (single icon library — good)
-- **Fonts**: `Inter` via `next/font/google`
-- **Charts**: `recharts` 2.12
+- **Framework**: Vite 5.4 + React 18 + TypeScript 5.6
+- **Styling**: Tailwind CSS 3.4 + CSS variables (HSL color tokens) + `tailwindcss-animate`
+- **Components**: shadcn/ui pattern (Radix primitives + CVA)
+- **Icons**: `lucide-react`
+- **Fonts**: `Inter` via Google Fonts
+- **Charts**: `recharts` 2.12 with theme-aware wrappers
 - **Forms**: `react-hook-form` + `zod` + `@hookform/resolvers`
 - **State**: Local React state + Context (Auth, Theme, Timezone). No global store.
-- **Routing**: Single-page — `active` module state in `page.tsx` switches between modules. No Next.js route segments.
+- **Routing**: Single-page — `active` module state in `App.tsx` switches between modules.
 
-### 1.3 Backend
+## 3. Backend
 
 - **Database**: Supabase (Postgres). 5 migrations applied.
 - **Auth**: Supabase Auth (email/password). `onAuthStateChange` with async guard.
 - **Edge Functions**: 2 Deno functions — `ai-chat` (OpenAI proxy), `sync-to-sheets` (Google Sheets webhook).
 - **API pattern**: Client talks to Supabase directly via anon key. Edge functions proxy external APIs.
 
-### 1.4 Database Schema
+## 4. Database Schema
 
 | Table | Scope | Purpose |
 |---|---|---|
@@ -69,100 +89,24 @@ supabase/
 | `achievements` | owner-scoped | Earned badges per user |
 | `ai_chat_messages` | owner-scoped | AI chat history per session |
 
-**Note**: Trading tables are currently single-tenant (`USING (true)`). Profiles/subscriptions/achievements/chat are owner-scoped. This is a known split — future migration to owner-scoped trading data is planned.
+## 5. Module Inventory
 
-### 1.5 AI Features
+| Module | Status | Notes |
+|---|---|---|
+| Dashboard | Complete | KPI cards, equity curve, recent trades, AI insights, open positions, goals |
+| Trading Journal | Complete | Trade list, add/edit/delete, search/filter |
+| Analytics | Complete | 12 stat cards, daily P&L, session/instrument/direction breakdown |
+| Risk Management | Complete | Position size calculator with live results |
+| AI Coach | Complete | Insight generation with local fallback |
+| AI Chat | Complete | Chat interface with edge function + fallback |
+| Psychology | Complete | Daily check-in with 7 metric sliders |
+| Achievements | Complete | 12 achievements with earned/locked states |
+| Plan | Complete | Trading goals CRUD with progress bars |
+| Calendar | Complete | Economic calendar with sample events |
+| News | Complete | News center with sample articles |
+| Brokers | Complete | Broker connections, add/remove/sync, open positions |
 
-- **AI Coach** (`components/modules/coach.tsx`): Generates insights from trade history via edge function.
-- **AI Chat** (`components/modules/chat.tsx`): Conversational assistant with trade context.
-- **AI Insights**: Stored in `ai_insights` table, displayed on dashboard.
-- **News** (`components/modules/news.tsx`): AI-curated financial news with sentiment.
-
-### 1.6 Integrations
-
-- **Brokers**: MT4, MT5, cTrader, DXtrade, MatchTrader, Binance, Bybit, OANDA, IBKR (UI connections in `brokers.tsx`).
-- **External APIs**: OpenAI (via `ai-chat` edge function), Google Sheets (via `sync-to-sheets`).
-- **Auth provider**: Supabase Auth (email/password only).
-
----
-
-## 2. Strengths
-
-1. **Clean module separation** — 12 modules in `components/modules/`, each self-contained.
-2. **Pure analytics engine** — `computeMetrics()` is a pure function, easy to test and reuse.
-3. **Comprehensive design tokens** — CSS variables for dark/light themes already in `globals.css`.
-4. **Full shadcn/ui library** — 40+ primitives already installed, no need to build from scratch.
-5. **Type-safe domain model** — All Supabase types defined in `lib/supabase.ts`.
-6. **Single icon library** — `lucide-react` throughout, no mixing.
-7. **Edge function pattern** — External API calls proxied correctly via Deno functions.
-8. **Responsive shell** — Desktop sidebar + mobile bottom nav.
-
-## 3. Weaknesses & Technical Debt
-
-1. **No centralized design-token file** — Colors live in `globals.css` but spacing/radius/shadows are ad-hoc Tailwind values, not tokens.
-2. **Theme engine is minimal** — Only dark/light toggle, no `system` option, no SSR-safe hydration (flash of wrong theme possible).
-3. **No event bus** — Modules can't react to cross-cutting events (trade created, account synced) without prop drilling.
-4. **Module switching is a giant switch** — `page.tsx` has 12 conditional renders; no lazy loading.
-5. **No chart wrapper** — Recharts is used directly in each module; no shared theme-aware wrapper.
-6. **No empty/error/loading component library** — Each module reinvents spinner states.
-7. **Branding is hardcoded** — Logo, app name, colors are inline in `sidebar.tsx` and `auth-page.tsx`.
-8. **No barrel exports** — Deep import paths (`@/components/modules/dashboard`) everywhere.
-9. **Trading data is single-tenant** — `USING (true)` on trading tables; not yet owner-scoped (planned).
-10. **No code splitting** — All 12 modules load eagerly on the dashboard page.
-
-## 4. Refactoring Opportunities
-
-1. **Extract design tokens** → `lib/design-tokens.ts` (single source of truth for spacing, radius, shadows, motion).
-2. **Enhance theme engine** → Support `system`, SSR-safe, centralized `brand` config.
-3. **Add Event/Intelligence Bus** → `lib/event-bus.ts` for decoupled module communication.
-4. **Lazy-load modules** → `next/dynamic` per module to reduce initial bundle.
-5. **Create chart wrappers** → `components/charts/` with theme-aware recharts wrappers.
-6. **Standardize state components** → EmptyState, ErrorState, LoadingState, Skeleton.
-7. **Centralize branding** → `lib/brand.ts` (name, logo, colors, metadata).
-8. **Add barrel exports** → `components/ui/index.ts`, `components/modules/index.ts`.
-
-## 5. Reusable Components
-
-Already reusable: `StatCard`, all `components/ui/*` (shadcn primitives), `cn()`, `computeMetrics()`, `getSpec()`, `pipValuePerLot()`, format helpers.
-
-## 6. Performance Notes
-
-- **Bundle**: All modules eagerly imported in `page.tsx`. Lazy loading will help.
-- **Charts**: Recharts is heavy; wrappers can enable tree-shaking and shared theming.
-- **No memoization**: `computeMetrics()` runs on every render in analytics; consider `useMemo`.
-
----
-
-## 7. Enterprise Architecture (Post-Foundation)
-
-### 7.1 Module Map
-
-```
-lib/
-  design-tokens.ts        Centralized spacing, radius, shadow, motion tokens
-  brand.ts               TraderOS brand config (name, logo, colors, metadata)
-  event-bus.ts           Event & Intelligence Bus (pub/sub)
-  module-registry.ts      Module metadata + lazy-load helpers
-  supabase.ts             (existing) Supabase client + domain types
-  analytics.ts           (existing) Metrics engine
-  instruments.ts         (existing) Instrument specs
-  format.ts              (existing) Formatters
-  utils.ts               (existing) cn()
-components/
-  theme-provider.tsx     (enhanced) system/dark/light + SSR-safe
-  brand/                 BrandLogo, BrandMark components
-  feedback/              EmptyState, ErrorState, LoadingState, PageSkeleton
-  charts/                ChartContainer, LineChart, BarChart, AreaChart wrappers
-  layout/                PageContainer, SectionHeader (extracted patterns)
-  modules/               (existing) 12 feature modules
-  ui/                    (existing) shadcn primitives
-docs/
-  ARCHITECTURE.md        This file
-  DESIGN-SYSTEM.md       Design system reference
-  COMPONENTS.md          Component library reference
-```
-
-### 7.2 Event & Intelligence Bus
+## 6. Event & Intelligence Bus
 
 A lightweight pub/sub system that decouples modules from each other. Events flow:
 
@@ -174,18 +118,11 @@ Journal (trade created) → EventBus.emit('trade:created', trade)
   → Achievements engine checks milestones
 ```
 
-Consumers subscribe via `useEvent('trade:created', handler)`. No tight coupling between modules.
+Consumers subscribe via `useEvent('trade:created', handler)`.
 
-### 7.3 Conventions
+## 7. Conventions
 
-- **Folder structure**: `lib/` for framework-agnostic logic, `components/` for React, `components/ui/` for primitives, `components/modules/` for features, `components/feedback/` for state components, `components/charts/` for chart wrappers.
+- **Folder structure**: `lib/` for framework-agnostic logic, `components/` for React, `components/ui/` for primitives, `components/modules/` for features.
 - **Naming**: PascalCase components, camelCase functions, kebab-case files for non-component libs.
 - **Types**: Domain types in `lib/supabase.ts`. UI types co-located with components.
-- **Imports**: Use `@/` alias. Barrel exports for `components/ui/` and `components/feedback/`.
-
-### 7.4 Future Scalability
-
-- Modules can be split into separate Next.js route segments when needed.
-- Event bus enables adding new AI consumers without touching existing modules.
-- Design tokens make rebranding a config change, not a code change.
-- Chart wrappers make swapping charting libraries a one-file change.
+- **Imports**: Use `@/` alias (resolves to `./src/`).

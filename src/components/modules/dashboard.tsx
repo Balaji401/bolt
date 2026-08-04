@@ -7,7 +7,7 @@ import { formatCurrency, formatPercent, formatCompact, formatDateTime } from '@/
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AreaChart } from '@/components/charts';
-import { EmptyState, LoadingState } from '@/components/feedback/state';
+import { EmptyState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
 
 export function Dashboard({ trades, insights, positions, goals }: { trades: Trade[]; insights: AiInsight[]; positions: OpenPosition[]; goals: TradingGoal[] }) {

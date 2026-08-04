@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { computeMetrics } from '@/lib/analytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { EmptyState, LoadingState } from '@/components/feedback/state';
+import { EmptyState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
 import { emit } from '@/lib/event-bus';
 import { logger } from '@/lib/logger';

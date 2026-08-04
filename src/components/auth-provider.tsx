@@ -3,6 +3,11 @@ import { createContext, useContext, useEffect, useState, useCallback } from 'rea
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, type Profile, type Subscription } from '@/lib/supabase';
 
+type ProfileUpdate = Partial<Pick<Profile,
+  'display_name' | 'full_name' | 'username' | 'avatar_url' |
+  'timezone' | 'preferred_currency' | 'preferred_language' | 'trading_experience'
+>>;
+
 type AuthState = {
   session: Session | null;
   user: User | null;
@@ -12,6 +17,11 @@ type AuthState = {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  signOutAllDevices: () => Promise<{ error: string | null }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+  changePassword: (newPassword: string) => Promise<{ error: string | null }>;
+  updateProfile: (updates: ProfileUpdate) => Promise<{ error: string | null }>;
+  deleteAccount: () => Promise<{ error: string | null }>;
   refresh: () => Promise<void>;
 };
 
@@ -29,7 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: existing } = await supabase.from('profiles').select('*').eq('user_id', u.id).maybeSingle();
       if (!existing) {
         const displayName = (u.user_metadata?.full_name as string) || u.email?.split('@')[0] || 'Trader';
-        const { data: created } = await supabase.from('profiles').insert({ user_id: u.id, display_name: displayName, avatar_url: (u.user_metadata?.avatar_url as string) || null, plan_tier: 'free' }).select().maybeSingle();
+        const { data: created } = await supabase.from('profiles').insert({
+          user_id: u.id, display_name: displayName, avatar_url: (u.user_metadata?.avatar_url as string) || null, plan_tier: 'free',
+        }).select().maybeSingle();
         setProfile(created as Profile | null);
         await supabase.from('subscriptions').insert({ user_id: u.id, plan_tier: 'free', status: 'active' });
         if (u.email) {
@@ -53,7 +65,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(data.session);
       setUser(data.session?.user || null);
       if (data.session?.user) {
-        loadProfile(data.session.user).finally(() => mounted && setLoading(false));
+        loadProfile(data.session.user).then(() => {
+          if (mounted) {
+            supabase.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('user_id', data.session!.user.id).then();
+          }
+        }).finally(() => mounted && setLoading(false));
       } else {
         setLoading(false);
       }
@@ -106,12 +122,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null); setSubscription(null); setSession(null); setUser(null);
   }, []);
 
+  const signOutAllDevices = useCallback(async () => {
+    const { error } = await supabase.auth.signOut({ scope: 'global' });
+    if (error) return { error: friendlyAuthError(error) };
+    setProfile(null); setSubscription(null); setSession(null); setUser(null);
+    return { error: null };
+  }, []);
+
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) return { error: friendlyAuthError(error) };
+    return { error: null };
+  }, []);
+
+  const changePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { error: friendlyAuthError(error) };
+    return { error: null };
+  }, []);
+
+  const updateProfile = useCallback(async (updates: ProfileUpdate) => {
+    if (!user) return { error: 'Not signed in' };
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .select()
+      .maybeSingle();
+    if (error) return { error: 'Failed to update profile. Please try again.' };
+    if (data) setProfile(data as Profile);
+    return { error: null };
+  }, [user]);
+
+  const deleteAccount = useCallback(async () => {
+    if (!user) return { error: 'Not signed in' };
+    const { error } = await supabase
+      .from('profiles')
+      .update({ account_status: 'deleted', deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('user_id', user.id);
+    if (error) return { error: 'Failed to process account deletion. Please try again.' };
+    await supabase.auth.signOut();
+    setProfile(null); setSubscription(null); setSession(null); setUser(null);
+    return { error: null };
+  }, [user]);
+
   const refresh = useCallback(async () => {
     if (!user) return;
     await loadProfile(user);
   }, [user, loadProfile]);
 
-  return <AuthContext.Provider value={{ session, user, profile, subscription, loading, signIn, signUp, signOut, refresh }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{
+      session, user, profile, subscription, loading,
+      signIn, signUp, signOut, signOutAllDevices, resetPassword, changePassword, updateProfile, deleteAccount, refresh,
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

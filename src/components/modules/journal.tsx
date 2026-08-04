@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { Plus, Search, TrendingUp, TrendingDown, Trash2, Edit3, X, Filter } from 'lucide-react';
+import { Plus, Search, TrendingUp, TrendingDown, Trash2, Edit3, Filter } from 'lucide-react';
 import type { Trade } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDateTime } from '@/lib/format';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { EmptyState, LoadingState } from '@/components/feedback/state';
+import { EmptyState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
 import { emit } from '@/lib/event-bus';
 import { logger } from '@/lib/logger';

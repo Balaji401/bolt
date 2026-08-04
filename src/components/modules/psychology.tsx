@@ -16,14 +16,18 @@ const METRICS = ['confidence', 'fear', 'greed', 'fomo', 'discipline', 'patience'
 export function Psychology() {
   const [logs, setLogs] = useState<PsychologyLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [form, setForm] = useState({ confidence: 70, fear: 30, greed: 20, fomo: 25, discipline: 80, patience: 75, execution_quality: 70, emotional_state: '', notes: '' });
 
-  useEffect(() => {
-    supabase.from('psychology_logs').select('*').order('log_date', { ascending: false }).then(({ data }) => {
-      setLogs((data || []) as PsychologyLog[]);
-      setLoading(false);
-    });
-  }, []);
+  const load = async () => {
+    setError(false);
+    const { data, error } = await supabase.from('psychology_logs').select('*').order('log_date', { ascending: false });
+    if (error) { setError(true); setLoading(false); return; }
+    setLogs((data || []) as PsychologyLog[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const save = async () => {
     const { error } = await supabase.from('psychology_logs').insert({
@@ -39,6 +43,7 @@ export function Psychology() {
   };
 
   if (loading) return <LoadingState label="Loading psychology logs..." />;
+  if (error) return <div className="grid place-items-center h-64 text-center"><div className="space-y-3"><p className="text-sm text-muted-foreground">Failed to load psychology logs.</p><Button onClick={load} variant="outline" size="sm">Retry</Button></div></div>;
 
   return (
     <div className="space-y-6">

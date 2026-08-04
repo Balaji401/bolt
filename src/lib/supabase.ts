@@ -151,8 +151,17 @@ export type Profile = {
   id: string;
   user_id: string;
   display_name: string | null;
+  full_name: string | null;
+  username: string | null;
   avatar_url: string | null;
   plan_tier: PlanTier;
+  timezone: string | null;
+  preferred_currency: string;
+  preferred_language: string;
+  trading_experience: 'beginner' | 'intermediate' | 'advanced' | 'expert' | null;
+  last_login_at: string | null;
+  account_status: 'active' | 'suspended' | 'deleted';
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 };

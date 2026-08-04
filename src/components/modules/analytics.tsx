@@ -1,6 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import { BarChart3, TrendingUp, Clock, Target } from 'lucide-react';
+import { BarChart3, TrendingUp } from 'lucide-react';
 import type { Trade } from '@/lib/supabase';
 import { computeMetrics } from '@/lib/analytics';
 import { formatCurrency, formatPercent, formatCompact, formatDuration } from '@/lib/format';

@@ -49,6 +49,13 @@ export const tradingGoalSchema = z.object({
 export const emailSchema = z.string().email('Invalid email address');
 export const passwordSchema = z.string().min(8, 'Password must be at least 8 characters');
 
+export function validatePassword(pw: string): { valid: boolean; message?: string } {
+  if (pw.length < 8) return { valid: false, message: 'Password must be at least 8 characters long.' };
+  if (!/[a-zA-Z]/.test(pw)) return { valid: false, message: 'Password must contain at least one letter.' };
+  if (!/[0-9]/.test(pw)) return { valid: false, message: 'Password must contain at least one number.' };
+  return { valid: true };
+}
+
 export type TradeInput = z.infer<typeof tradeSchema>;
 export type PsychologyLogInput = z.infer<typeof psychologyLogSchema>;
 export type TradingGoalInput = z.infer<typeof tradingGoalSchema>;
