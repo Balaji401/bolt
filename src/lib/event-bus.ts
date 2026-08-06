@@ -10,7 +10,8 @@ export type TraderOSEvent =
   | 'review:completed' | 'insight:generated' | 'psychology:logged' | 'psychology:updated'
   | 'rule:violated' | 'screenshot:uploaded' | 'ai:analysis_finished'
   | 'notification:sent' | 'subscription:updated'
-  | 'theme:changed' | 'module:changed' | 'search:executed' | 'config:updated';
+  | 'theme:changed' | 'module:changed' | 'search:executed' | 'config:updated'
+  | 'journal:add-trade' | 'trade:archived';
 
 export type EventMetadata = {
   timestamp: string;

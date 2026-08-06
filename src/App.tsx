@@ -117,7 +117,7 @@ function AppContent() {
       <div className="flex min-h-screen">
         <Sidebar active={active} onSelect={handleSelect} onShowPlans={() => {}} onSignOut={signOut} profile={profile} tier={tier} />
         <div className="flex-1 flex flex-col min-w-0">
-          <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('chat')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => {} : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
+          <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('chat')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => emit('journal:add-trade', undefined, 'page') : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
           <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 overflow-x-hidden">
             {loading ? (
               <div className="grid place-items-center h-64"><div className="flex items-center gap-3 text-muted-foreground"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Loading your trading workspace…</div></div>

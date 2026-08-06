@@ -41,6 +41,18 @@ export type Trade = {
   lessons_learned: string | null;
   screenshots: string[] | null;
   holding_minutes: number | null;
+  market: string | null;
+  timeframe: string | null;
+  risk_pct: number | null;
+  archived: boolean | null;
+};
+
+export type TradeTag = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  created_at: string;
 };
 
 export type AiInsight = {
