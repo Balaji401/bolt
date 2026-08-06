@@ -45,6 +45,9 @@ export type Trade = {
   timeframe: string | null;
   risk_pct: number | null;
   archived: boolean | null;
+  broker_trade_id: string | null;
+  import_job_id: string | null;
+  source: string | null;
 };
 
 export type TradeTag = {
@@ -52,6 +55,45 @@ export type TradeTag = {
   user_id: string;
   name: string;
   color: string;
+  created_at: string;
+};
+
+export type ImportJob = {
+  id: string;
+  user_id: string;
+  trading_account_id: string | null;
+  broker_name: string;
+  source_format: string;
+  file_name: string | null;
+  file_size: number | null;
+  status: 'pending' | 'validating' | 'importing' | 'completed' | 'failed' | 'cancelled';
+  total_rows: number;
+  imported_rows: number;
+  skipped_rows: number;
+  failed_rows: number;
+  progress: number;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+export type ImportError = {
+  id: string;
+  import_job_id: string;
+  row_number: number;
+  row_data: Record<string, unknown> | null;
+  error_type: string;
+  error_message: string;
+  created_at: string;
+};
+
+export type CsvMappingTemplate = {
+  id: string;
+  user_id: string;
+  broker_format: string;
+  template_name: string;
+  column_mapping: Record<string, string>;
   created_at: string;
 };
 

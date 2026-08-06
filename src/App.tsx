@@ -105,7 +105,7 @@ function AppContent() {
       case 'psychology':   return <Psychology />;
       case 'calendar':     return <EconomicCalendar />;
       case 'news':         return <NewsCenter />;
-      case 'brokers':      return <Brokers />;
+      case 'brokers':      return <Brokers trades={trades} onTradesUpdated={load} />;
       case 'accounts':     return <Accounts />;
       case 'settings':     return <Settings />;
       default:             return <ComingSoon moduleKey={active} />;
