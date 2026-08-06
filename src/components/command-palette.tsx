@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Plus, Upload, MessageSquare, LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, CalendarDays, Newspaper, HeartPulse, Plug, Trophy, Target, Settings as SettingsIcon, Clock, ArrowRight, History } from 'lucide-react';
+import { Search, Plus, Upload, MessageSquare, LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, CalendarDays, Newspaper, HeartPulse, Plug, Trophy, Target, Settings as SettingsIcon, Clock, ArrowRight, History, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { search, loadRecentSearches, saveRecentSearch, clearRecentSearches, highlightMatch, type SearchResult } from '@/lib/search';
 import { MODULES, type ModuleKey } from '@/lib/module-registry';
@@ -29,6 +29,7 @@ export function CommandPalette({ open, onClose, onNavigate, onNewTrade, onImport
     { id: 'calendar', label: 'Go to Calendar', icon: CalendarDays, action: () => { onNavigate('calendar'); onClose(); } },
     { id: 'news', label: 'Go to News', icon: Newspaper, action: () => { onNavigate('news'); onClose(); } },
     { id: 'brokers', label: 'Go to Broker Sync', icon: Plug, action: () => { onNavigate('brokers'); onClose(); } },
+    { id: 'accounts', label: 'Go to Accounts', icon: Wallet, action: () => { onNavigate('accounts'); onClose(); } },
     { id: 'achievements', label: 'Go to Achievements', icon: Trophy, action: () => { onNavigate('achievements'); onClose(); } },
     { id: 'plan', label: 'Go to Trading Plan', icon: Target, action: () => { onNavigate('plan'); onClose(); } },
     { id: 'settings', label: 'Go to Settings', icon: SettingsIcon, action: () => { onNavigate('settings'); onClose(); } },

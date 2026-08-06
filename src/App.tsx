@@ -94,7 +94,7 @@ function AppContent() {
 
   const renderModule = () => {
     switch (active) {
-      case 'dashboard':    return <Dashboard trades={trades} insights={insights} positions={positions} goals={goals} />;
+      case 'dashboard':    return <Dashboard trades={trades} insights={insights} positions={positions} goals={goals} onNavigate={handleSelect} />;
       case 'journal':      return <Journal trades={trades} onMutated={load} />;
       case 'analytics':    return <Analytics trades={trades} />;
       case 'risk':         return <RiskManagement />;
