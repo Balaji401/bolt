@@ -19,7 +19,7 @@ import { Accounts } from '@/components/modules/accounts';
 import { Settings } from '@/components/modules/settings';
 import { ComingSoon } from '@/components/modules/coming-soon';
 import { AuthPage } from '@/components/auth-page';
-import { useAuth } from '@/components/auth-provider';
+import { AuthProvider, useAuth } from '@/components/auth-provider';
 import { WorkspaceProvider } from '@/components/workspace-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TimezoneProvider } from '@/components/timezone-provider';
@@ -143,7 +143,9 @@ export default function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <TimezoneProvider>
-          <AppContent />
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
         </TimezoneProvider>
       </ThemeProvider>
     </ErrorBoundary>
