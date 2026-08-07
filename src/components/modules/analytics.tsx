@@ -1,102 +1,152 @@
 'use client';
-import { useMemo } from 'react';
-import { BarChart3, TrendingUp } from 'lucide-react';
+import { useMemo, useState, useRef } from 'react';
+import { BarChart3, Download, Settings2, RotateCcw, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Trade } from '@/lib/supabase';
-import { computeMetrics } from '@/lib/analytics';
-import { formatCurrency, formatPercent, formatCompact, formatDuration } from '@/lib/format';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, AreaChart } from '@/components/charts';
+import { computeMetrics, filterTrades, type FilterOptions } from '@/lib/analytics';
+import { useDashboardPrefs, type WidgetId } from '@/lib/dashboard-prefs';
+import { exportTradesCSV, exportMetricsCSV, exportTradesExcel, exportPDF } from '@/lib/export';
 import { EmptyState } from '@/components/feedback/state';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { AnalyticsFilters } from '@/components/analytics/filters';
+import { SummaryCards } from '@/components/analytics/summary-cards';
+import { EquityCurve } from '@/components/analytics/equity-curve';
+import { PerformanceCharts } from '@/components/analytics/performance-charts';
+import { PerformanceBreakdown } from '@/components/analytics/breakdown';
+import { RecentPerformance } from '@/components/analytics/recent-performance';
+import { AiPlaceholders } from '@/components/analytics/ai-placeholders';
+import { ComparisonTools } from '@/components/analytics/comparison-tools';
+
+const WIDGET_LABELS: Record<WidgetId, string> = {
+  summary: 'Summary Cards',
+  equity: 'Equity Curve',
+  dailyPnl: 'P&L Charts',
+  winLoss: 'Win/Loss & Direction',
+  profitDist: 'Profit Distribution',
+  tradeFreq: 'Trade Frequency',
+  sessionPerf: 'Session Performance',
+  dayOfWeek: 'Day of Week',
+  hourOfDay: 'Hour of Day',
+  instrumentPerf: 'Instrument Performance',
+  directionPerf: 'Direction Performance',
+  recentPerf: 'Recent Performance',
+  breakdown: 'Performance Breakdown',
+  aiPlaceholders: 'AI Insights (Preview)',
+  comparison: 'Comparison Tools (Preview)',
+};
 
 export function Analytics({ trades }: { trades: Trade[] }) {
-  const metrics = useMemo(() => computeMetrics(trades), [trades]);
+  const [filters, setFilters] = useState<FilterOptions>({
+    dateFrom: null, dateTo: null, instrument: null, market: null,
+    strategy: null, session: null, direction: null, setupType: null,
+    tags: [], timeframe: null,
+  });
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const { widgets, visibleWidgets, toggleWidget, reorderWidget, resetLayout } = useDashboardPrefs();
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
-  if (trades.length === 0) return <EmptyState icon={BarChart3} title="No analytics yet" description="Add trades to see detailed performance analytics." />;
+  const filteredTrades = useMemo(() => filterTrades(trades, filters), [trades, filters]);
+  const metrics = useMemo(() => computeMetrics(filteredTrades), [filteredTrades]);
 
-  const sessionData = Object.entries(metrics.bySession).map(([k, v]) => ({ session: k, pnl: v.pnl, trades: v.trades }));
-  const dailyData = metrics.dailyPnl.map((d) => ({ date: d.date, pnl: d.pnl }));
-  const instrumentData = Object.entries(metrics.byInstrument).map(([k, v]) => ({ instrument: k, pnl: v.pnl, trades: v.trades })).sort((a, b) => b.pnl - a.pnl).slice(0, 10);
+  if (trades.length === 0) {
+    return <EmptyState icon={BarChart3} title="No analytics yet" description="Add trades to see detailed performance analytics." />;
+  }
+
+  const handleExport = (format: 'csv' | 'excel' | 'pdf') => {
+    if (format === 'csv') {
+      exportTradesCSV(filteredTrades);
+      exportMetricsCSV(metrics, 'traderos-metrics');
+    } else if (format === 'excel') {
+      exportTradesExcel(filteredTrades);
+    } else if (format === 'pdf' && dashboardRef.current) {
+      exportPDF('TraderOS Performance Report', dashboardRef.current, 'traderos-report');
+    }
+    setShowExport(false);
+  };
+
+  const renderWidget = (id: WidgetId) => {
+    switch (id) {
+      case 'summary': return <SummaryCards metrics={metrics} />;
+      case 'recentPerf': return <RecentPerformance trades={filteredTrades} />;
+      case 'equity': return <EquityCurve metrics={metrics} />;
+      case 'dailyPnl': return <PerformanceCharts metrics={metrics} />;
+      case 'breakdown': return <PerformanceBreakdown metrics={metrics} />;
+      case 'aiPlaceholders': return <AiPlaceholders />;
+      case 'comparison': return <ComparisonTools />;
+      default: return null;
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total P&L" value={formatCurrency(metrics.totalPnl)} color={metrics.totalPnl >= 0 ? 'text-success' : 'text-destructive'} />
-        <StatCard label="Win Rate" value={`${metrics.winRate.toFixed(1)}%`} color="text-primary" />
-        <StatCard label="Profit Factor" value={metrics.profitFactor === Infinity ? '∞' : metrics.profitFactor.toFixed(2)} color={metrics.profitFactor >= 1 ? 'text-success' : 'text-destructive'} />
-        <StatCard label="Expectancy" value={formatCurrency(metrics.expectancy)} color={metrics.expectancy >= 0 ? 'text-success' : 'text-destructive'} />
-        <StatCard label="Avg Win" value={formatCurrency(metrics.avgWin)} color="text-success" />
-        <StatCard label="Avg Loss" value={formatCurrency(-metrics.avgLoss)} color="text-destructive" />
-        <StatCard label="Best Trade" value={formatCurrency(metrics.bestTrade)} color="text-success" />
-        <StatCard label="Worst Trade" value={formatCurrency(metrics.worstTrade)} color="text-destructive" />
-        <StatCard label="Max Win Streak" value={`${metrics.maxWinStreak}`} color="text-success" />
-        <StatCard label="Max Loss Streak" value={`${metrics.maxLossStreak}`} color="text-destructive" />
-        <StatCard label="Avg Hold Time" value={metrics.avgHoldTime > 0 ? formatDuration(metrics.avgHoldTime) : '—'} color="text-foreground" />
-        <StatCard label="Avg Confidence" value={metrics.avgConfidence > 0 ? `${metrics.avgConfidence.toFixed(0)}` : '—'} color="text-foreground" />
+    <div className="space-y-6" ref={dashboardRef}>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Performance Dashboard</h2>
+          <p className="text-xs text-muted-foreground">{filteredTrades.length} trades analyzed</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Button variant="outline" size="sm" onClick={() => setShowExport(!showExport)}>
+              <Download className="w-3.5 h-3.5 mr-1.5" /> Export
+            </Button>
+            {showExport && (
+              <div className="absolute right-0 top-full mt-1 z-20 rounded-lg border border-border bg-popover shadow-lg p-1 min-w-[140px]">
+                <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-secondary rounded-md transition-colors">Export as CSV</button>
+                <button onClick={() => handleExport('excel')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-secondary rounded-md transition-colors">Export as Excel</button>
+                <button onClick={() => handleExport('pdf')} className="w-full text-left px-3 py-1.5 text-xs hover:bg-secondary rounded-md transition-colors">Export as PDF</button>
+              </div>
+            )}
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowCustomize(!showCustomize)}>
+            <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Customize
+          </Button>
+        </div>
       </div>
 
-      {/* Daily P&L */}
-      <Card>
-        <CardHeader><CardTitle className="text-sm">Daily P&L</CardTitle></CardHeader>
-        <CardContent>
-          {dailyData.length > 0 ? (
-            <BarChart data={dailyData} xKey="date" bars={[{ key: 'pnl', name: 'P&L', color: 'hsl(var(--chart-1))' }]} height={280} formatY={(v) => formatCompact(v)} />
-          ) : <EmptyState title="No daily data" />}
-        </CardContent>
-      </Card>
-
-      {/* By Session + By Instrument */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Customize Panel */}
+      {showCustomize && (
         <Card>
-          <CardHeader><CardTitle className="text-sm">P&L by Session</CardTitle></CardHeader>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm">Dashboard Layout</CardTitle>
+            <Button variant="ghost" size="sm" onClick={resetLayout}><RotateCcw className="w-3 h-3 mr-1" /> Reset</Button>
+          </CardHeader>
           <CardContent>
-            {sessionData.length > 0 ? (
-              <BarChart data={sessionData} xKey="session" bars={[{ key: 'pnl', name: 'P&L', color: 'hsl(var(--chart-2))' }]} height={250} formatY={(v) => formatCompact(v)} />
-            ) : <EmptyState title="No session data" />}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm">P&L by Instrument (Top 10)</CardTitle></CardHeader>
-          <CardContent>
-            {instrumentData.length > 0 ? (
-              <BarChart data={instrumentData} xKey="instrument" bars={[{ key: 'pnl', name: 'P&L', color: 'hsl(var(--chart-3))' }]} height={250} horizontal formatY={(v) => formatCompact(v)} />
-            ) : <EmptyState title="No instrument data" />}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Direction breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Direction Breakdown</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 rounded-lg bg-success/10"><TrendingUp className="w-6 h-6 text-success mx-auto mb-2" /><div className="text-2xl font-bold">{metrics.byDirection.long.trades}</div><div className="text-xs text-muted-foreground">Long Trades</div><div className={cn('text-sm font-semibold mt-1', metrics.byDirection.long.pnl >= 0 ? 'text-success' : 'text-destructive')}>{formatCurrency(metrics.byDirection.long.pnl)}</div></div>
-              <div className="text-center p-4 rounded-lg bg-destructive/10"><TrendingUp className="w-6 h-6 text-destructive mx-auto mb-2 rotate-180" /><div className="text-2xl font-bold">{metrics.byDirection.short.trades}</div><div className="text-xs text-muted-foreground">Short Trades</div><div className={cn('text-sm font-semibold mt-1', metrics.byDirection.short.pnl >= 0 ? 'text-success' : 'text-destructive')}>{formatCurrency(metrics.byDirection.short.pnl)}</div></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {widgets.map((w, i) => (
+                <div key={w.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <button onClick={() => toggleWidget(w.id)} className="shrink-0">
+                      {w.visible ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                    </button>
+                    <span className={cn('text-xs font-medium truncate', !w.visible && 'text-muted-foreground line-through')}>{WIDGET_LABELS[w.id]}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button onClick={() => reorderWidget(w.id, 'up')} disabled={i === 0} className="p-1 rounded hover:bg-secondary disabled:opacity-30 transition-colors"><ChevronUp className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => reorderWidget(w.id, 'down')} disabled={i === widgets.length - 1} className="p-1 rounded hover:bg-secondary disabled:opacity-30 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Strategy Tags</CardTitle></CardHeader>
-          <CardContent>
-            {Object.keys(metrics.byTag).length > 0 ? (
-              <div className="space-y-2">
-                {Object.entries(metrics.byTag).sort((a, b) => b[1].pnl - a[1].pnl).map(([tag, data]) => (
-                  <div key={tag} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <span className="text-sm font-medium">{tag}</span>
-                    <div className="flex items-center gap-3"><span className="text-xs text-muted-foreground">{data.trades} trades · {data.winRate.toFixed(0)}% WR</span><span className={cn('text-sm font-semibold', data.pnl >= 0 ? 'text-success' : 'text-destructive')}>{formatCurrency(data.pnl)}</span></div>
-                  </div>
-                ))}
-              </div>
-            ) : <EmptyState title="No tags" description="Add strategy tags to your trades to see tag-level analytics." />}
-          </CardContent>
-        </Card>
-      </div>
+      )}
+
+      {/* Filters */}
+      <AnalyticsFilters trades={trades} filters={filters} onChange={setFilters} />
+
+      {/* Widgets */}
+      {filteredTrades.length === 0 ? (
+        <EmptyState icon={BarChart3} title="No trades match your filters" description="Try adjusting or clearing your filters to see more data." />
+      ) : (
+        <div className="space-y-6">
+          {visibleWidgets.map((w) => (
+            <div key={w.id}>{renderWidget(w.id)}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
-
-function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return <Card><CardContent className="p-4"><div className={cn('text-xl font-bold tabular-nums', color)}>{value}</div><div className="text-xs text-muted-foreground mt-0.5">{label}</div></CardContent></Card>;
 }
