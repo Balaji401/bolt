@@ -270,3 +270,35 @@ export type TradingAccount = {
   created_at: string;
   updated_at: string;
 };
+
+export type RiskRules = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  max_daily_loss_pct: number;
+  max_weekly_loss_pct: number;
+  max_monthly_loss_pct: number;
+  max_risk_per_trade_pct: number;
+  max_open_trades: number;
+  max_daily_trades: number;
+  max_position_size_pct: number;
+  stop_after_losses: number;
+  stop_after_daily_loss: boolean;
+  warning_threshold_pct: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RiskAlert = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  alert_type: string;
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  metric_value: number | null;
+  threshold_value: number | null;
+  acknowledged: boolean;
+  created_at: string;
+};

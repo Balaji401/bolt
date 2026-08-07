@@ -1,86 +1,197 @@
 'use client';
-import { useState } from 'react';
-import { Calculator, DollarSign, Percent, AlertTriangle } from 'lucide-react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { Shield, Settings2, Calculator, BarChart3, Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
+import type { Trade, RiskRules } from '@/lib/supabase';
+import { computeMetrics } from '@/lib/analytics';
+import { computeRiskMetrics, getDefaultRules } from '@/lib/risk';
+import { useWorkspace } from '@/components/workspace-provider';
+import { supabase } from '@/lib/supabase';
+import { AnalyticsFilters } from '@/components/analytics/filters';
+import { filterTrades, type FilterOptions } from '@/lib/analytics';
+import { EmptyState } from '@/components/feedback/state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { getSpec, pipValuePerLot } from '@/lib/instruments';
-import { formatCurrency, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { RiskDashboard } from '@/components/risk/risk-dashboard';
+import { RiskRulesEditor } from '@/components/risk/risk-rules';
+import { RiskCalculator } from '@/components/risk/risk-calculator';
+import { DrawdownAnalysis } from '@/components/risk/drawdown-analysis';
+import { AdvancedStatistics } from '@/components/risk/advanced-statistics';
+import { TradingBehavior } from '@/components/risk/trading-behavior';
+import { RiskAlertsPanel } from '@/components/risk/risk-alerts';
+import { RiskAiPlaceholders } from '@/components/risk/risk-ai-placeholders';
 
-export function RiskManagement() {
-  const [accountSize, setAccountSize] = useState('10000');
-  const [riskPercent, setRiskPercent] = useState('1');
-  const [entry, setEntry] = useState('');
-  const [stopLoss, setStopLoss] = useState('');
-  const [takeProfit, setTakeProfit] = useState('');
-  const [instrument, setInstrument] = useState('EURUSD');
-  const [direction, setDirection] = useState('long');
+type WidgetId = 'dashboard' | 'calculator' | 'rules' | 'drawdown' | 'advanced' | 'behavior' | 'alerts' | 'ai';
 
-  const account = parseFloat(accountSize) || 0;
-  const riskPct = parseFloat(riskPercent) || 0;
-  const riskAmount = account * (riskPct / 100);
-  const entryPrice = parseFloat(entry) || 0;
-  const slPrice = parseFloat(stopLoss) || 0;
-  const tpPrice = parseFloat(takeProfit) || 0;
+const WIDGET_LABELS: Record<WidgetId, string> = {
+  dashboard: 'Risk Dashboard',
+  calculator: 'Risk Calculator',
+  rules: 'Risk Rules',
+  drawdown: 'Drawdown Analysis',
+  advanced: 'Advanced Statistics',
+  behavior: 'Trading Behavior',
+  alerts: 'Risk Alerts',
+  ai: 'AI Risk (Preview)',
+};
 
-  const slDistance = entryPrice > 0 && slPrice > 0 ? Math.abs(entryPrice - slPrice) : 0;
-  const tpDistance = entryPrice > 0 && tpPrice > 0 ? Math.abs(tpPrice - entryPrice) : 0;
-  const rr = slDistance > 0 && tpDistance > 0 ? tpDistance / slDistance : 0;
+const DEFAULT_WIDGETS: { id: WidgetId; visible: boolean; order: number }[] = [
+  { id: 'dashboard', visible: true, order: 0 },
+  { id: 'alerts', visible: true, order: 1 },
+  { id: 'calculator', visible: true, order: 2 },
+  { id: 'drawdown', visible: true, order: 3 },
+  { id: 'advanced', visible: true, order: 4 },
+  { id: 'behavior', visible: true, order: 5 },
+  { id: 'rules', visible: true, order: 6 },
+  { id: 'ai', visible: true, order: 7 },
+];
 
-  const pipValue = pipValuePerLot(instrument);
-  const spec = getSpec(instrument);
-  const pipSize = spec?.pipSize || 0.0001;
-  const slPips = slDistance > 0 && pipSize > 0 ? slDistance / pipSize : 0;
-  const positionSize = slPips > 0 && pipValue > 0 ? riskAmount / (slPips * pipValue) : 0;
-  const lots = positionSize;
-  const units = lots * (spec?.contractSize || 100000);
+const STORAGE_KEY = 'traderos-risk-widgets';
 
-  const potentialProfit = tpDistance > 0 && pipSize > 0 ? (tpDistance / pipSize) * pipValue * lots : 0;
+export function RiskManagement({ trades }: { trades: Trade[] }) {
+  const { workspace, activeAccount } = useWorkspace();
+  const [filters, setFilters] = useState<FilterOptions>({
+    dateFrom: null, dateTo: null, instrument: null, market: null,
+    strategy: null, session: null, direction: null, setupType: null,
+    tags: [], timeframe: null,
+  });
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [rules, setRules] = useState<RiskRules>(getDefaultRules());
+  const [widgets, setWidgets] = useState(DEFAULT_WIDGETS);
+
+  // Load risk rules
+  const loadRules = useCallback(async () => {
+    if (!workspace) return;
+    const { data } = await supabase
+      .from('risk_rules')
+      .select('*')
+      .eq('workspace_id', workspace.id)
+      .maybeSingle();
+    if (data) setRules(data as RiskRules);
+    else setRules({ ...getDefaultRules(), workspace_id: workspace.id, user_id: workspace.user_id });
+  }, [workspace]);
+
+  useEffect(() => { loadRules(); }, [loadRules]);
+
+  // Load widget preferences
+  useEffect(() => {
+    const key = workspace ? `${STORAGE_KEY}-${workspace.id}` : STORAGE_KEY;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const merged = DEFAULT_WIDGETS.map((dw) => parsed.find((p: any) => p.id === dw.id) || dw);
+        setWidgets(merged.sort((a, b) => a.order - b.order));
+      }
+    } catch {}
+  }, [workspace]);
+
+  const filteredTrades = useMemo(() => filterTrades(trades, filters), [trades, filters]);
+  const metrics = useMemo(() => computeMetrics(filteredTrades), [filteredTrades]);
+  const accountBalance = activeAccount ? Number(activeAccount.current_balance) : 10000;
+  const riskMetrics = useMemo(() => computeRiskMetrics(filteredTrades, accountBalance, rules, metrics), [filteredTrades, accountBalance, rules, metrics]);
+
+  const visibleWidgets = widgets.filter((w) => w.visible).sort((a, b) => a.order - b.order);
+
+  const toggleWidget = (id: WidgetId) => {
+    const updated = widgets.map((w) => w.id === id ? { ...w, visible: !w.visible } : w);
+    setWidgets(updated);
+    const key = workspace ? `${STORAGE_KEY}-${workspace.id}` : STORAGE_KEY;
+    try { localStorage.setItem(key, JSON.stringify(updated)); } catch {}
+  };
+
+  const reorderWidget = (id: WidgetId, direction: 'up' | 'down') => {
+    const sorted = [...widgets].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((w) => w.id === id);
+    if (idx < 0) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const updated = sorted.map((w, i) => {
+      if (i === idx) return { ...w, order: sorted[swapIdx].order };
+      if (i === swapIdx) return { ...w, order: sorted[idx].order };
+      return w;
+    });
+    setWidgets(updated);
+    const key = workspace ? `${STORAGE_KEY}-${workspace.id}` : STORAGE_KEY;
+    try { localStorage.setItem(key, JSON.stringify(updated)); } catch {}
+  };
+
+  const resetLayout = () => {
+    setWidgets(DEFAULT_WIDGETS);
+    const key = workspace ? `${STORAGE_KEY}-${workspace.id}` : STORAGE_KEY;
+    try { localStorage.removeItem(key); } catch {}
+  };
+
+  const renderWidget = (id: WidgetId) => {
+    switch (id) {
+      case 'dashboard': return <RiskDashboard metrics={riskMetrics} />;
+      case 'alerts': return <RiskAlertsPanel metrics={riskMetrics} rules={rules} trades={filteredTrades} />;
+      case 'calculator': return <RiskCalculator />;
+      case 'drawdown': return <DrawdownAnalysis metrics={riskMetrics} />;
+      case 'advanced': return <AdvancedStatistics metrics={riskMetrics} />;
+      case 'behavior': return <TradingBehavior metrics={riskMetrics} />;
+      case 'rules': return <RiskRulesEditor onSaved={(r) => setRules(r)} />;
+      case 'ai': return <RiskAiPlaceholders />;
+    }
+  };
+
+  if (trades.length === 0 && !activeAccount) {
+    return <EmptyState icon={Shield} title="Risk Management" description="Add a trading account and start logging trades to see risk analytics." />;
+  }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calculator */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Calculator className="w-4 h-4" /> Position Size Calculator</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Account Size ($)</Label><Input type="number" value={accountSize} onChange={(e) => setAccountSize(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Risk per Trade (%)</Label><Input type="number" step="0.1" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Instrument</Label><Select value={instrument} onValueChange={setInstrument}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="EURUSD">EURUSD</SelectItem><SelectItem value="GBPUSD">GBPUSD</SelectItem><SelectItem value="USDJPY">USDJPY</SelectItem><SelectItem value="XAUUSD">XAUUSD (Gold)</SelectItem><SelectItem value="BTCUSD">BTCUSD</SelectItem></SelectContent></Select></div>
-              <div className="space-y-2"><Label>Direction</Label><Select value={direction} onValueChange={setDirection}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="long">Long</SelectItem><SelectItem value="short">Short</SelectItem></SelectContent></Select></div>
-              <div className="space-y-2"><Label>Entry Price</Label><Input type="number" step="any" value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="1.0850" /></div>
-              <div className="space-y-2"><Label>Stop Loss</Label><Input type="number" step="any" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="1.0800" /></div>
-              <div className="col-span-2 space-y-2"><Label>Take Profit (optional)</Label><Input type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder="1.1000" /></div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Results */}
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Results</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <ResultRow icon={DollarSign} label="Risk Amount" value={formatCurrency(riskAmount)} color="text-destructive" />
-            <ResultRow icon={Percent} label="Stop Loss Distance" value={`${formatNumber(slPips, 1)} pips`} color="text-foreground" />
-            <ResultRow icon={Percent} label="R:R Ratio" value={rr > 0 ? `1:${rr.toFixed(2)}` : '—'} color="text-primary" />
-            <div className="border-t border-border pt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 rounded-lg bg-primary/10"><div className="text-xs text-muted-foreground mb-1">Position Size</div><div className="text-2xl font-bold text-primary">{formatNumber(lots, 2)}</div><div className="text-xs text-muted-foreground">lots</div></div>
-                <div className="text-center p-4 rounded-lg bg-secondary/60"><div className="text-xs text-muted-foreground mb-1">Units</div><div className="text-2xl font-bold">{formatNumber(units, 0)}</div><div className="text-xs text-muted-foreground">units</div></div>
-              </div>
-            </div>
-            {potentialProfit > 0 && <ResultRow icon={DollarSign} label="Potential Profit" value={formatCurrency(potentialProfit)} color="text-success" />}
-            {riskPct > 2 && <div className="flex items-center gap-2 text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg px-3 py-2"><AlertTriangle className="w-3.5 h-3.5" /> Risk above 2% per trade is considered aggressive.</div>}
-          </CardContent>
-        </Card>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Risk Management</h2>
+          <p className="text-xs text-muted-foreground">{filteredTrades.length} trades · Account: {activeAccount?.account_name || 'Default'}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowCustomize(!showCustomize)}>
+          <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Customize
+        </Button>
       </div>
+
+      {/* Customize Panel */}
+      {showCustomize && (
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm">Widget Layout</CardTitle>
+            <Button variant="ghost" size="sm" onClick={resetLayout}><RotateCcw className="w-3 h-3 mr-1" /> Reset</Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {widgets.map((w, i) => (
+                <div key={w.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <button onClick={() => toggleWidget(w.id)} className="shrink-0">
+                      {w.visible ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                    </button>
+                    <span className={cn('text-xs font-medium truncate', !w.visible && 'text-muted-foreground line-through')}>{WIDGET_LABELS[w.id]}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button onClick={() => reorderWidget(w.id, 'up')} disabled={i === 0} className="p-1 rounded hover:bg-secondary disabled:opacity-30 transition-colors"><ChevronUp className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => reorderWidget(w.id, 'down')} disabled={i === widgets.length - 1} className="p-1 rounded hover:bg-secondary disabled:opacity-30 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
+      <AnalyticsFilters trades={trades} filters={filters} onChange={setFilters} />
+
+      {/* Widgets */}
+      {filteredTrades.length === 0 ? (
+        <EmptyState icon={BarChart3} title="No trades match your filters" description="Try adjusting or clearing your filters to see more data." />
+      ) : (
+        <div className="space-y-6">
+          {visibleWidgets.map((w) => (
+            <div key={w.id}>{renderWidget(w.id)}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
-}
-
-function ResultRow({ icon: Icon, label, value, color }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; color: string }) {
-  return <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-sm text-muted-foreground"><Icon className="w-4 h-4" /> {label}</div><span className={cn('text-sm font-semibold', color)}>{value}</span></div>;
 }
