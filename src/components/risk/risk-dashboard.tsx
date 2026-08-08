@@ -5,7 +5,7 @@ import { formatCurrency, formatPercent, formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export function RiskDashboard({ metrics }: { metrics: RiskMetrics }) {
-  const safeColor = metrics.safeRiskIndicator === 'safe' ? 'success' : metrics.safeRiskIndicator === 'warning' ? 'warning' : 'destructive';
+  const safeColor = (metrics.safeRiskIndicator === 'safe' ? 'success' : metrics.safeRiskIndicator === 'warning' ? 'warning' : 'destructive') as 'success' | 'warning' | 'destructive';
   const cards = [
     { label: 'Account Balance', value: formatCurrency(metrics.accountBalance), icon: Wallet, accent: 'primary' as const },
     { label: 'Account Equity', value: formatCurrency(metrics.accountEquity), icon: DollarSign, accent: 'primary' as const },

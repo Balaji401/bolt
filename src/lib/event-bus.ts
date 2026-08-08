@@ -11,7 +11,7 @@ export type TraderOSEvent =
   | 'rule:violated' | 'screenshot:uploaded' | 'ai:analysis_finished'
   | 'notification:sent' | 'subscription:updated'
   | 'theme:changed' | 'module:changed' | 'search:executed' | 'config:updated'
-  | 'journal:add-trade' | 'trade:archived';
+  | 'journal:add-trade' | 'journal:prefill-trade' | 'trade:archived';
 
 export type EventMetadata = {
   timestamp: string;

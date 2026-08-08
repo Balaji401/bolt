@@ -97,7 +97,7 @@ function AppContent() {
       case 'dashboard':    return <Dashboard trades={trades} insights={insights} positions={positions} goals={goals} onNavigate={handleSelect} />;
       case 'journal':      return <Journal trades={trades} onMutated={load} />;
       case 'analytics':    return <Analytics trades={trades} />;
-      case 'risk':         return <RiskManagement />;
+      case 'risk':         return <RiskManagement trades={trades} />;
       case 'coach':        return <Coach trades={trades} insights={insights} onRegenerated={load} />;
       case 'chat':         return <AiChat trades={trades} />;
       case 'achievements': return <Achievements trades={trades} />;
