@@ -302,3 +302,125 @@ export type RiskAlert = {
   acknowledged: boolean;
   created_at: string;
 };
+
+export type DailyJournal = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  journal_date: string;
+  sleep_quality: number | null;
+  energy_level: number | null;
+  emotional_state_pre: string | null;
+  confidence_pre: number | null;
+  stress_level: number | null;
+  trading_plan: string | null;
+  market_bias: string | null;
+  goals_today: string | null;
+  overall_mood: string | null;
+  biggest_mistake: string | null;
+  biggest_success: string | null;
+  lessons_learned: string | null;
+  improvements: string | null;
+  followed_plan: boolean | null;
+  overall_satisfaction: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WeeklyReview = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  week_start: string;
+  week_end: string;
+  trades_taken: number;
+  win_rate: number;
+  biggest_win: string | null;
+  biggest_loss: string | null;
+  best_decision: string | null;
+  worst_decision: string | null;
+  psychology_notes: string | null;
+  lessons_learned: string | null;
+  goals_next_week: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MonthlyReview = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  month_year: string;
+  performance_summary: string | null;
+  discipline_review: string | null;
+  psychology_review: string | null;
+  goal_progress: string | null;
+  habit_completion: string | null;
+  biggest_improvements: string | null;
+  biggest_problems: string | null;
+  action_plan: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Habit = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  description: string | null;
+  frequency: string;
+  active: boolean;
+  created_at: string;
+};
+
+export type HabitLog = {
+  id: string;
+  user_id: string;
+  habit_id: string;
+  log_date: string;
+  completed: boolean;
+  created_at: string;
+};
+
+export type Mistake = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  category: string;
+  description: string | null;
+  frequency: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  solution: string | null;
+  related_trade_ids: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type TradeReview = {
+  id: string;
+  user_id: string;
+  trade_id: string;
+  why_taken: string | null;
+  followed_setup: boolean | null;
+  respected_risk: boolean | null;
+  entered_early: boolean | null;
+  exited_early: boolean | null;
+  improvements: string | null;
+  rating: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomEmotion = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+};
