@@ -102,7 +102,7 @@ function AppContent() {
       case 'chat':         return <AiChat trades={trades} />;
       case 'achievements': return <Achievements trades={trades} />;
       case 'plan':         return <Plan />;
-      case 'psychology':   return <Psychology />;
+      case 'psychology':   return <Psychology trades={trades} />;
       case 'calendar':     return <EconomicCalendar />;
       case 'news':         return <NewsCenter />;
       case 'brokers':      return <Brokers trades={trades} onTradesUpdated={load} />;

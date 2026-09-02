@@ -1,94 +1,161 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { HeartPulse, Plus, Save } from 'lucide-react';
-import type { PsychologyLog } from '@/lib/supabase';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { HeartPulse, LayoutDashboard, BookOpen, ClipboardCheck, Heart, Shield, Target, Repeat, CalendarRange, CalendarDays, AlertTriangle, GitBranch, Sparkles } from 'lucide-react';
+import type { Trade, PsychologyLog } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useWorkspace } from '@/components/workspace-provider';
+import { computePsychologyMetrics } from '@/lib/psychology';
+import { computeMetrics } from '@/lib/analytics';
+import { LoadingState } from '@/components/feedback/state';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { EmptyState, LoadingState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
-import { emit } from '@/lib/event-bus';
+import { PsychologyDashboard } from '@/components/psychology/psych-dashboard';
+import { DailyJournal } from '@/components/psychology/daily-journal';
+import { TradeReviewEditor } from '@/components/psychology/trade-review';
+import { EmotionTracker } from '@/components/psychology/emotion-tracker';
+import { DisciplineTracker } from '@/components/psychology/discipline-tracker';
+import { GoalManager } from '@/components/psychology/goal-manager';
+import { HabitTracker } from '@/components/psychology/habit-tracker';
+import { WeeklyReviewEditor } from '@/components/psychology/weekly-review';
+import { MonthlyReviewEditor } from '@/components/psychology/monthly-review';
+import { MistakeLibrary } from '@/components/psychology/mistake-library';
+import { JournalTimeline } from '@/components/psychology/journal-timeline';
+import { PsychologyAIPlaceholders } from '@/components/psychology/ai-placeholders';
 
-const METRICS = ['confidence', 'fear', 'greed', 'fomo', 'discipline', 'patience', 'execution_quality'] as const;
+type Tab = 'dashboard' | 'journal' | 'trade-review' | 'emotions' | 'discipline' | 'goals' | 'habits' | 'weekly' | 'monthly' | 'mistakes' | 'timeline' | 'ai';
 
-export function Psychology() {
-  const [logs, setLogs] = useState<PsychologyLog[]>([]);
+const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'journal', label: 'Daily Journal', icon: BookOpen },
+  { id: 'trade-review', label: 'Trade Review', icon: ClipboardCheck },
+  { id: 'emotions', label: 'Emotions', icon: Heart },
+  { id: 'discipline', label: 'Discipline', icon: Shield },
+  { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'habits', label: 'Habits', icon: Repeat },
+  { id: 'weekly', label: 'Weekly Review', icon: CalendarRange },
+  { id: 'monthly', label: 'Monthly Review', icon: CalendarDays },
+  { id: 'mistakes', label: 'Mistake Library', icon: AlertTriangle },
+  { id: 'timeline', label: 'Timeline', icon: GitBranch },
+  { id: 'ai', label: 'AI Features', icon: Sparkles },
+];
+
+export function Psychology({ trades }: { trades: Trade[] }) {
+  const { workspace } = useWorkspace();
+  const [tab, setTab] = useState<Tab>('dashboard');
+  const [psychLogs, setPsychLogs] = useState<PsychologyLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [form, setForm] = useState({ confidence: 70, fear: 30, greed: 20, fomo: 25, discipline: 80, patience: 75, execution_quality: 70, emotional_state: '', notes: '' });
+  const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setError(false);
-    const { data, error } = await supabase.from('psychology_logs').select('*').order('log_date', { ascending: false });
+    const { data, error } = await supabase.from('psychology_logs').select('*').order('log_date', { ascending: false }).limit(30);
     if (error) { setError(true); setLoading(false); return; }
-    setLogs((data || []) as PsychologyLog[]);
+    setPsychLogs((data || []) as PsychologyLog[]);
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  const save = async () => {
-    const { error } = await supabase.from('psychology_logs').insert({
-      confidence: form.confidence, fear: form.fear, greed: form.greed, fomo: form.fomo,
-      discipline: form.discipline, patience: form.patience, execution_quality: form.execution_quality,
-      emotional_state: form.emotional_state || null, notes: form.notes || null, rule_violations: [],
-    });
-    if (error) return;
-    emit('psychology:logged', form, 'psychology');
-    const { data } = await supabase.from('psychology_logs').select('*').order('log_date', { ascending: false });
-    setLogs((data || []) as PsychologyLog[]);
-    setForm({ confidence: 70, fear: 30, greed: 20, fomo: 25, discipline: 80, patience: 75, execution_quality: 70, emotional_state: '', notes: '' });
-  };
+  const metrics = useMemo(() => {
+    const m = computeMetrics(trades);
+    return computePsychologyMetrics(trades, psychLogs, m);
+  }, [trades, psychLogs]);
 
-  if (loading) return <LoadingState label="Loading psychology logs..." />;
-  if (error) return <div className="grid place-items-center h-64 text-center"><div className="space-y-3"><p className="text-sm text-muted-foreground">Failed to load psychology logs.</p><Button onClick={load} variant="outline" size="sm">Retry</Button></div></div>;
+  if (loading) return <LoadingState label="Loading psychology data..." />;
+  if (error) return (
+    <div className="grid place-items-center h-64 text-center">
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">Failed to load psychology data.</p>
+        <Button onClick={load} variant="outline" size="sm">Retry</Button>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2"><HeartPulse className="w-5 h-5 text-primary" /><div><h2 className="text-lg font-semibold">Trading Psychology</h2><p className="text-sm text-muted-foreground">Track and improve your mental game</p></div></div>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <HeartPulse className="w-5 h-5 text-primary" />
+        <div>
+          <h2 className="text-lg font-semibold">Trading Psychology</h2>
+          <p className="text-sm text-muted-foreground">Understand your emotions, discipline, habits, and decision-making</p>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader><CardTitle className="text-sm">Daily Check-in</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {METRICS.map((m) => (
-              <div key={m} className="space-y-2">
-                <Label className="capitalize">{m.replace('_', ' ')}</Label>
-                <div className="flex items-center gap-2">
-                  <input type="range" min={0} max={100} value={form[m]} onChange={(e) => setForm({ ...form, [m]: parseInt(e.target.value) })} className="flex-1 accent-primary" />
-                  <span className="text-sm font-semibold w-8 text-right">{form[m]}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="space-y-2"><Label>Emotional State</Label><Input value={form.emotional_state} onChange={(e) => setForm({ ...form, emotional_state: e.target.value })} placeholder="Calm, focused, anxious..." /></div>
-            <div className="space-y-2"><Label>Notes</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="What's on your mind?" /></div>
-          </div>
-          <Button onClick={save}><Save className="w-4 h-4 mr-2" /> Save Check-in</Button>
-        </CardContent>
-      </Card>
+      {/* Tab bar */}
+      <div className="flex flex-wrap gap-1.5 border-b border-border pb-px">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg text-xs font-medium transition-all border-b-2 -mb-px',
+              tab === t.id
+                ? 'border-primary text-primary bg-primary/5'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            )}
+          >
+            <t.icon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t.label}</span>
+          </button>
+        ))}
+      </div>
 
-      {logs.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Recent Check-ins</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {logs.slice(0, 10).map((log) => (
-                <div key={log.id} className="flex items-center gap-4 py-2 border-b border-border last:border-0">
-                  <div className="text-xs text-muted-foreground w-20">{log.log_date}</div>
-                  <div className="flex flex-wrap gap-3 flex-1">
-                    {METRICS.map((m) => <div key={m} className="flex items-center gap-1 text-xs"><span className="text-muted-foreground capitalize">{m.replace('_', ' ').slice(0, 3)}</span><span className={cn('font-semibold', (log[m] || 0) >= 70 ? 'text-success' : (log[m] || 0) >= 40 ? 'text-warning' : 'text-destructive')}>{log[m]}</span></div>)}
-                  </div>
-                  {log.emotional_state && <span className="text-xs text-muted-foreground">{log.emotional_state}</span>}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Tab content */}
+      <div>
+        {tab === 'dashboard' && <PsychologyDashboard metrics={metrics} />}
+        {tab === 'journal' && <DailyJournal />}
+        {tab === 'trade-review' && <TradeReviewTab trades={trades} selectedTradeId={selectedTradeId} setSelectedTradeId={setSelectedTradeId} />}
+        {tab === 'emotions' && <EmotionTracker emotionFrequency={metrics.emotionFrequency} />}
+        {tab === 'discipline' && <DisciplineTracker metrics={metrics} />}
+        {tab === 'goals' && <GoalManager />}
+        {tab === 'habits' && <HabitTracker />}
+        {tab === 'weekly' && <WeeklyReviewEditor trades={trades} />}
+        {tab === 'monthly' && <MonthlyReviewEditor trades={trades} />}
+        {tab === 'mistakes' && <MistakeLibrary />}
+        {tab === 'timeline' && <JournalTimeline trades={trades} />}
+        {tab === 'ai' && <PsychologyAIPlaceholders />}
+      </div>
+    </div>
+  );
+}
+
+function TradeReviewTab({ trades, selectedTradeId, setSelectedTradeId }: { trades: Trade[]; selectedTradeId: string | null; setSelectedTradeId: (id: string | null) => void }) {
+  const closedTrades = trades.filter((t) => t.status === 'closed' && !t.archived).slice(0, 20);
+
+  if (closedTrades.length === 0) {
+    return (
+      <div className="grid place-items-center h-48 text-center">
+        <div className="space-y-2">
+          <ClipboardCheck className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+          <p className="text-sm text-muted-foreground">No closed trades to review yet.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const selectedTrade = closedTrades.find((t) => t.id === selectedTradeId) || closedTrades[0];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {closedTrades.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setSelectedTradeId(t.id)}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+              selectedTrade.id === t.id ? 'border-primary bg-primary/5 text-primary' : 'border-border hover:border-primary/30 text-muted-foreground'
+            )}
+          >
+            <span>{t.instrument}</span>
+            <span className={cn('font-semibold', Number(t.pnl) >= 0 ? 'text-success' : 'text-destructive')}>
+              {Number(t.pnl) >= 0 ? '+' : ''}{Number(t.pnl).toFixed(0)}
+            </span>
+          </button>
+        ))}
+      </div>
+      <TradeReviewEditor trade={selectedTrade} />
     </div>
   );
 }

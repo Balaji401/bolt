@@ -6,7 +6,7 @@ import { LineChart } from '@/components/charts';
 import { cn } from '@/lib/utils';
 
 export function PsychologyDashboard({ metrics }: { metrics: PsychologyMetrics }) {
-  const cards = [
+  const cards: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; accent: 'primary' | 'success' | 'warning' | 'destructive' }[] = [
     { label: 'Discipline Score', value: metrics.disciplineScore.toFixed(0), icon: CheckCircle2, accent: metrics.disciplineScore >= 70 ? 'success' : metrics.disciplineScore >= 50 ? 'warning' : 'destructive' },
     { label: 'Emotional Score', value: metrics.emotionalScore.toFixed(0), icon: Heart, accent: metrics.emotionalScore >= 70 ? 'success' : metrics.emotionalScore >= 50 ? 'warning' : 'destructive' },
     { label: 'Consistency Score', value: metrics.consistencyScore.toFixed(0), icon: Activity, accent: metrics.consistencyScore >= 70 ? 'success' : metrics.consistencyScore >= 50 ? 'warning' : 'destructive' },

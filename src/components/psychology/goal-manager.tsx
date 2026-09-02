@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Target, Plus, Trash2, Flag, Calendar, CheckCircle2 } from 'lucide-react';
+import { Target, Plus, Trash2, Calendar, CheckCircle2 } from 'lucide-react';
 import type { TradingGoal } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import { useWorkspace } from '@/components/workspace-provider';
@@ -170,5 +170,3 @@ export function GoalManager() {
     </div>
   );
 }
-
-import { CheckCircle2 } from 'lucide-react';
