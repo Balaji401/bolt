@@ -424,3 +424,109 @@ export type CustomEmotion = {
   color: string;
   created_at: string;
 };
+
+export type Strategy = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  category: string;
+  description: string | null;
+  market: string | null;
+  instrument_type: string | null;
+  timeframe: string | null;
+  status: 'active' | 'inactive' | 'testing' | 'archived';
+  market_conditions: string | null;
+  entry_conditions: string | null;
+  exit_conditions: string | null;
+  risk_rules: string | null;
+  position_rules: string | null;
+  advantages: string | null;
+  weaknesses: string | null;
+  common_mistakes: string | null;
+  improvements: string | null;
+  tags: string[];
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StrategyVersion = {
+  id: string;
+  strategy_id: string;
+  user_id: string;
+  version_number: number;
+  change_summary: string | null;
+  snapshot: Record<string, unknown>;
+  created_at: string;
+};
+
+export type TradeSetup = {
+  id: string;
+  strategy_id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  setup_type: string | null;
+  entry_pattern: string | null;
+  confirmation_rules: string | null;
+  invalidation_rules: string | null;
+  preferred_session: string | null;
+  preferred_market: string | null;
+  screenshot_urls: string[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Playbook = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  strategy_id: string | null;
+  name: string;
+  market_preparation: string | null;
+  entry_checklist: string[];
+  risk_checklist: string[];
+  exit_checklist: string[];
+  post_trade_checklist: string[];
+  common_mistakes: string[];
+  golden_rules: string[];
+  example_chart_urls: string[];
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ChecklistTemplate = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  checklist_type: 'before_entry' | 'after_exit' | 'pre_market' | 'risk_check' | 'custom';
+  items: string[];
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StrategyAttachment = {
+  id: string;
+  strategy_id: string;
+  user_id: string;
+  attachment_type: 'image' | 'pdf' | 'note' | 'link';
+  title: string | null;
+  file_url: string | null;
+  external_url: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type StrategyCategory = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+};

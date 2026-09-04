@@ -2,7 +2,7 @@ import {
   LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, Target,
   CalendarDays, Newspaper, HeartPulse, Plug, MessageSquare, Trophy,
   Brain, Crosshair, Layers, Building2, LineChart, Settings, ShieldCheck,
-  Network, Wallet, type LucideIcon,
+  Network, Wallet, Target, type LucideIcon,
 } from 'lucide-react';
 
 export type ModuleKey =
@@ -10,7 +10,7 @@ export type ModuleKey =
   | 'achievements' | 'plan' | 'psychology' | 'calendar' | 'news' | 'brokers'
   | 'accounts'
   | 'strategy_intelligence' | 'decision_intelligence' | 'multi_account_intelligence'
-  | 'prop_firms' | 'market_intelligence' | 'ai_intelligence' | 'settings' | 'admin';
+  | 'prop_firms' | 'market_intelligence' | 'ai_intelligence' | 'strategy' | 'settings' | 'admin';
 
 export type ModuleGroup = 'Overview' | 'Intelligence' | 'Connections' | 'Tools' | 'System';
 export type ModuleVisibility = 'all' | 'pro' | 'elite' | 'admin';
@@ -34,6 +34,7 @@ export const MODULES: ModuleMeta[] = [
   { key: 'coach', label: 'AI Coach', icon: Sparkles, group: 'Intelligence', visibility: 'all', meta: { title: 'AI Trading Coach', subtitle: 'Personalized insights to improve your trading' }, keywords: ['ai', 'coaching'] },
   { key: 'chat', label: 'AI Chat', icon: MessageSquare, group: 'Intelligence', visibility: 'all', badge: 'NEW', meta: { title: 'AI Trading Assistant', subtitle: 'Ask anything about your trades' }, keywords: ['chat', 'assistant'] },
   { key: 'psychology', label: 'Psychology', icon: HeartPulse, group: 'Intelligence', visibility: 'all', meta: { title: 'Trading Psychology', subtitle: 'Track and improve your mental game' }, keywords: ['mood', 'tilt', 'discipline'] },
+  { key: 'strategy', label: 'Strategy Management', icon: Target, group: 'Intelligence', visibility: 'all', meta: { title: 'Strategy Management', subtitle: 'Build and improve your trading operating manual' }, keywords: ['strategy', 'setup', 'playbook', 'rules'] },
   { key: 'achievements', label: 'Achievements', icon: Trophy, group: 'Intelligence', visibility: 'all', meta: { title: 'Achievements', subtitle: 'Gamified milestones for your trading journey' }, keywords: ['badges', 'goals'] },
   { key: 'strategy_intelligence', label: 'Strategy Intelligence', icon: Network, group: 'Intelligence', visibility: 'pro', meta: { title: 'Strategy Intelligence', subtitle: 'Deep strategy performance analysis' }, keywords: ['strategy', 'setup'], comingSoon: true },
   { key: 'decision_intelligence', label: 'Decision Intelligence', icon: Crosshair, group: 'Intelligence', visibility: 'pro', meta: { title: 'Decision Intelligence', subtitle: 'Pre-trade decision support engine' }, keywords: ['decision'], comingSoon: true },

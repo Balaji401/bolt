@@ -12,6 +12,7 @@ import { AiChat } from '@/components/modules/chat';
 import { Achievements } from '@/components/modules/achievements';
 import { Plan } from '@/components/modules/plan';
 import { Psychology } from '@/components/modules/psychology';
+import { StrategyManagement } from '@/components/modules/strategy';
 import { EconomicCalendar } from '@/components/modules/calendar';
 import { NewsCenter } from '@/components/modules/news';
 import { Brokers } from '@/components/modules/brokers';
@@ -103,6 +104,7 @@ function AppContent() {
       case 'achievements': return <Achievements trades={trades} />;
       case 'plan':         return <Plan />;
       case 'psychology':   return <Psychology trades={trades} />;
+      case 'strategy':     return <StrategyManagement trades={trades} />;
       case 'calendar':     return <EconomicCalendar />;
       case 'news':         return <NewsCenter />;
       case 'brokers':      return <Brokers trades={trades} onTradesUpdated={load} />;
