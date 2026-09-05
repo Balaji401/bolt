@@ -70,7 +70,7 @@ function DailyCoaching({ ctx, insights }: { ctx: AiContext; insights: AiInsightR
   return <div className="space-y-3">
     <Card><CardContent className="p-4"><div className="text-xs text-muted-foreground mb-1">Today's Snapshot</div><div className="text-sm font-medium">{todayTrades.length} trades today | {m.totalTrades} total trades | Win rate {m.winRate.toFixed(1)}%</div></CardContent></Card>
     {insights.filter((i) => i.severity === 'critical' || i.severity === 'warning').slice(0, 3).map((insight) => <InsightCard key={insight.title} insight={insight} />)}
-    <Card><CardContent className="p-4"><div className="flex gap-3 items-start"><Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" /><div className="text-xs"><span className="font-medium">Today's focus:</span> {m.currentStreak < 0 ? `You're on a ${Math.abs(m.currentStreak)}-trade losing streak — focus on risk management and trade quality.` : m.winRate < 50 ? 'Focus on taking only A+ setups that fully meet your checklist.' : 'Keep executing your plan consistently — you're on track.'}</div></div></CardContent></Card>
+    <Card><CardContent className="p-4"><div className="flex gap-3 items-start"><Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" /><div className="text-xs"><span className="font-medium">Today's focus:</span> {m.currentStreak < 0 ? `You are on a ${Math.abs(m.currentStreak)}-trade losing streak — focus on risk management and trade quality.` : m.winRate < 50 ? 'Focus on taking only A+ setups that fully meet your checklist.' : 'Keep executing your plan consistently — you are on track.'}</div></div></CardContent></Card>
   </div>;
 }
 

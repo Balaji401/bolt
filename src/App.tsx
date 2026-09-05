@@ -9,6 +9,7 @@ import { Analytics } from '@/components/modules/analytics';
 import { RiskManagement } from '@/components/modules/risk';
 import { Coach } from '@/components/modules/coach';
 import { AiChat } from '@/components/modules/chat';
+import { AiIntelligence } from '@/components/modules/ai-intelligence';
 import { Achievements } from '@/components/modules/achievements';
 import { Plan } from '@/components/modules/plan';
 import { Psychology } from '@/components/modules/psychology';
@@ -101,6 +102,7 @@ function AppContent() {
       case 'risk':         return <RiskManagement trades={trades} />;
       case 'coach':        return <Coach trades={trades} insights={insights} onRegenerated={load} />;
       case 'chat':         return <AiChat trades={trades} />;
+      case 'ai_intelligence': return <AiIntelligence trades={trades} />;
       case 'achievements': return <Achievements trades={trades} />;
       case 'plan':         return <Plan />;
       case 'psychology':   return <Psychology trades={trades} />;
@@ -119,7 +121,7 @@ function AppContent() {
       <div className="flex min-h-screen">
         <Sidebar active={active} onSelect={handleSelect} onShowPlans={() => {}} onSignOut={signOut} profile={profile} tier={tier} />
         <div className="flex-1 flex flex-col min-w-0">
-          <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('chat')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => emit('journal:add-trade', undefined, 'page') : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
+          <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('ai_intelligence')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => emit('journal:add-trade', undefined, 'page') : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
           <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 overflow-x-hidden">
             {loading ? (
               <div className="grid place-items-center h-64"><div className="flex items-center gap-3 text-muted-foreground"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Loading your trading workspace…</div></div>
@@ -134,7 +136,7 @@ function AppContent() {
           </main>
         </div>
         <MobileNav active={active} onSelect={handleSelect} />
-        <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} onNavigate={handleSelect} onNewTrade={() => handleSelect('journal')} onImportTrades={() => handleSelect('brokers')} onOpenChat={() => handleSelect('chat')} />
+        <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} onNavigate={handleSelect} onNewTrade={() => handleSelect('journal')} onImportTrades={() => handleSelect('brokers')} onOpenChat={() => handleSelect('ai_intelligence')} />
       </div>
     </WorkspaceProvider>
   );

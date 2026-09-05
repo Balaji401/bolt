@@ -65,7 +65,7 @@ export function contextToPrompt(ctx: AiContext): string {
   if (ctx.mistakes.length > 0) lines.push(`Top Mistake: ${ctx.mistakes.sort((a, b) => b.frequency - a.frequency)[0]?.name || 'N/A'}`);
   if (ctx.psychologyLogs.length > 0) {
     const latest = ctx.psychologyLogs[0];
-    lines.push(`Latest Psychology: confidence ${latest.confidence}/10, discipline ${latest.discipline || 'N/A'}/10, stress ${latest.stress_level || 'N/A'}/10`);
+    lines.push(`Latest Psychology: confidence ${latest.confidence}/10, discipline ${latest.discipline || 'N/A'}/10, execution quality ${latest.execution_quality || 'N/A'}/10`);
   }
   if (ctx.riskRules) lines.push(`Risk Rules: max ${ctx.riskRules.max_risk_per_trade_pct}% per trade, max ${ctx.riskRules.max_daily_loss_pct}% daily loss`);
   if (ctx.memory.length > 0) lines.push(`Memory: ${ctx.memory.slice(0, 10).map((mem) => `${mem.key}: ${mem.value}`).join('; ')}`);
@@ -77,7 +77,7 @@ export type AiInsightResult = {
   title: string;
   body: string;
   severity: 'info' | 'success' | 'warning' | 'critical';
-  dataRef: string;
+  data_ref: string;
 };
 
 export function generateInsights(ctx: AiContext): AiInsightResult[] {
@@ -85,46 +85,46 @@ export function generateInsights(ctx: AiContext): AiInsightResult[] {
   const m = ctx.metrics;
   if (m.totalTrades === 0) return insights;
 
-  if (m.winRate < 40) insights.push({ type: 'mistake', title: 'Low Win Rate', body: `Your win rate is ${m.winRate.toFixed(1)}% across ${m.totalTrades} trades. Consider tightening entry criteria and only taking A+ setups.`, severity: 'warning', dataRef: 'win_rate' });
-  if (m.winRate >= 60) insights.push({ type: 'strength', title: 'Strong Win Rate', body: `Your ${m.winRate.toFixed(1)}% win rate is above average. Keep executing your plan consistently.`, severity: 'success', dataRef: 'win_rate' });
-  if (m.profitFactor < 1) insights.push({ type: 'mistake', title: 'Negative Profit Factor', body: `Profit factor is ${m.profitFactor.toFixed(2)} — losses exceed wins. Review risk management and position sizing.`, severity: 'critical', dataRef: 'profit_factor' });
-  if (m.profitFactor >= 2) insights.push({ type: 'strength', title: 'Excellent Profit Factor', body: `Profit factor of ${m.profitFactor.toFixed(2)} indicates a strong, repeatable edge.`, severity: 'success', dataRef: 'profit_factor' });
+  if (m.winRate < 40) insights.push({ type: 'mistake', title: 'Low Win Rate', body: `Your win rate is ${m.winRate.toFixed(1)}% across ${m.totalTrades} trades. Consider tightening entry criteria and only taking A+ setups.`, severity: 'warning', data_ref: 'win_rate' });
+  if (m.winRate >= 60) insights.push({ type: 'strength', title: 'Strong Win Rate', body: `Your ${m.winRate.toFixed(1)}% win rate is above average. Keep executing your plan consistently.`, severity: 'success', data_ref: 'win_rate' });
+  if (m.profitFactor < 1) insights.push({ type: 'mistake', title: 'Negative Profit Factor', body: `Profit factor is ${m.profitFactor.toFixed(2)} — losses exceed wins. Review risk management and position sizing.`, severity: 'critical', data_ref: 'profit_factor' });
+  if (m.profitFactor >= 2) insights.push({ type: 'strength', title: 'Excellent Profit Factor', body: `Profit factor of ${m.profitFactor.toFixed(2)} indicates a strong, repeatable edge.`, severity: 'success', data_ref: 'profit_factor' });
 
   const bestSession = Object.entries(m.bySession).sort((a, b) => b[1].pnl - a[1].pnl)[0];
-  if (bestSession && bestSession[1].pnl > 0) insights.push({ type: 'session', title: `Best Session: ${bestSession[0]}`, body: `${bestSession[0]} session is your most profitable with ${formatCurrency(bestSession[1].pnl)} across ${bestSession[1].trades} trades.`, severity: 'info', dataRef: 'best_session' });
+  if (bestSession && bestSession[1].pnl > 0) insights.push({ type: 'session', title: `Best Session: ${bestSession[0]}`, body: `${bestSession[0]} session is your most profitable with ${formatCurrency(bestSession[1].pnl)} across ${bestSession[1].trades} trades.`, severity: 'info', data_ref: 'best_session' });
   const worstSession = Object.entries(m.bySession).sort((a, b) => a[1].pnl - b[1].pnl)[0];
-  if (worstSession && worstSession[1].pnl < 0) insights.push({ type: 'session', title: `Worst Session: ${worstSession[0]}`, body: `${worstSession[0]} session has cost you ${formatCurrency(worstSession[1].pnl)}. Consider avoiding it or reviewing your trades there.`, severity: 'warning', dataRef: 'worst_session' });
+  if (worstSession && worstSession[1].pnl < 0) insights.push({ type: 'session', title: `Worst Session: ${worstSession[0]}`, body: `${worstSession[0]} session has cost you ${formatCurrency(worstSession[1].pnl)}. Consider avoiding it or reviewing your trades there.`, severity: 'warning', data_ref: 'worst_session' });
 
   const bestInstrument = Object.entries(m.byInstrument).sort((a, b) => b[1].pnl - a[1].pnl)[0];
-  if (bestInstrument && bestInstrument[1].pnl > 0) insights.push({ type: 'instrument', title: `Best Instrument: ${bestInstrument[0]}`, body: `${bestInstrument[0]} is your most profitable instrument with ${formatCurrency(bestInstrument[1].pnl)} P&L.`, severity: 'info', dataRef: 'best_instrument' });
+  if (bestInstrument && bestInstrument[1].pnl > 0) insights.push({ type: 'instrument', title: `Best Instrument: ${bestInstrument[0]}`, body: `${bestInstrument[0]} is your most profitable instrument with ${formatCurrency(bestInstrument[1].pnl)} P&L.`, severity: 'info', data_ref: 'best_instrument' });
   const worstInstrument = Object.entries(m.byInstrument).sort((a, b) => a[1].pnl - b[1].pnl)[0];
-  if (worstInstrument && worstInstrument[1].pnl < 0) insights.push({ type: 'instrument', title: `Worst Instrument: ${worstInstrument[0]}`, body: `${worstInstrument[0]} has lost you ${formatCurrency(worstInstrument[1].pnl)}. Review or reduce trading this instrument.`, severity: 'warning', dataRef: 'worst_instrument' });
+  if (worstInstrument && worstInstrument[1].pnl < 0) insights.push({ type: 'instrument', title: `Worst Instrument: ${worstInstrument[0]}`, body: `${worstInstrument[0]} has lost you ${formatCurrency(worstInstrument[1].pnl)}. Review or reduce trading this instrument.`, severity: 'warning', data_ref: 'worst_instrument' });
 
-  if (m.maxLossStreak >= 5) insights.push({ type: 'discipline', title: 'Long Losing Streak', body: `You had a ${m.maxLossStreak}-trade losing streak. Consider reducing position size during drawdowns and taking breaks.`, severity: 'warning', dataRef: 'max_loss_streak' });
+  if (m.maxLossStreak >= 5) insights.push({ type: 'discipline', title: 'Long Losing Streak', body: `You had a ${m.maxLossStreak}-trade losing streak. Consider reducing position size during drawdowns and taking breaks.`, severity: 'warning', data_ref: 'max_loss_streak' });
 
   if (ctx.mistakes.length > 0) {
     const topMistake = ctx.mistakes.sort((a, b) => b.frequency - a.frequency)[0];
-    insights.push({ type: 'mistake', title: `Most Common Mistake: ${topMistake.name}`, body: `"${topMistake.name}" has occurred ${topMistake.frequency} times. ${topMistake.solution ? `Suggested fix: ${topMistake.solution}` : 'Review and add a prevention strategy.'}`, severity: topMistake.severity === 'critical' ? 'critical' : 'warning', dataRef: 'top_mistake' });
+    insights.push({ type: 'mistake', title: `Most Common Mistake: ${topMistake.name}`, body: `"${topMistake.name}" has occurred ${topMistake.frequency} times. ${topMistake.solution ? `Suggested fix: ${topMistake.solution}` : 'Review and add a prevention strategy.'}`, severity: topMistake.severity === 'critical' ? 'critical' : 'warning', data_ref: 'top_mistake' });
   }
 
   if (ctx.psychologyLogs.length > 0) {
     const latest = ctx.psychologyLogs[0];
-    if (latest.discipline != null && latest.discipline < 5) insights.push({ type: 'psychology', title: 'Low Discipline Score', body: `Your latest discipline self-rating is ${latest.discipline}/10. Focus on following your trading plan and checklist before every trade.`, severity: 'warning', dataRef: 'discipline' });
-    if (latest.fomo != null && latest.fomo > 6) insights.push({ type: 'psychology', title: 'High FOMO Detected', body: `Your latest FOMO rating is ${latest.fomo}/10. Wait for your setups to come to you — don't chase moves.`, severity: 'warning', dataRef: 'fomo' });
-    if (latest.confidence >= 7) insights.push({ type: 'psychology', title: 'Strong Confidence', body: `Your confidence is at ${latest.confidence}/10. Use it to execute your plan, but stay disciplined.`, severity: 'success', dataRef: 'confidence' });
+    if (latest.discipline != null && latest.discipline < 5) insights.push({ type: 'psychology', title: 'Low Discipline Score', body: `Your latest discipline self-rating is ${latest.discipline}/10. Focus on following your trading plan and checklist before every trade.`, severity: 'warning', data_ref: 'discipline' });
+    if (latest.fomo != null && latest.fomo > 6) insights.push({ type: 'psychology', title: 'High FOMO Detected', body: `Your latest FOMO rating is ${latest.fomo}/10. Wait for your setups to come to you — don't chase moves.`, severity: 'warning', data_ref: 'fomo' });
+    if (latest.confidence >= 7) insights.push({ type: 'psychology', title: 'Strong Confidence', body: `Your confidence is at ${latest.confidence}/10. Use it to execute your plan, but stay disciplined.`, severity: 'success', data_ref: 'confidence' });
   }
 
   if (ctx.goals.length > 0) {
     const incomplete = ctx.goals.filter((g) => !g.completed);
-    if (incomplete.length > 0) insights.push({ type: 'goal', title: `${incomplete.length} Goals In Progress`, body: `You have ${incomplete.length} incomplete goals. ${incomplete.map((g) => `${g.title} (${((g.current_value / g.target_value) * 100).toFixed(0)}%)`).join(', ')}.`, severity: 'info', dataRef: 'goals' });
+    if (incomplete.length > 0) insights.push({ type: 'goal', title: `${incomplete.length} Goals In Progress`, body: `You have ${incomplete.length} incomplete goals. ${incomplete.map((g) => `${g.title} (${((g.current_value / g.target_value) * 100).toFixed(0)}%)`).join(', ')}.`, severity: 'info', data_ref: 'goals' });
   }
 
   if (ctx.habits.length > 0) {
     const active = ctx.habits.filter((h) => h.active);
-    if (active.length > 0) insights.push({ type: 'habit', title: `${active.length} Active Habits`, body: `You're tracking ${active.length} habits: ${active.map((h) => h.name).join(', ')}.`, severity: 'info', dataRef: 'habits' });
+    if (active.length > 0) insights.push({ type: 'habit', title: `${active.length} Active Habits`, body: `You're tracking ${active.length} habits: ${active.map((h) => h.name).join(', ')}.`, severity: 'info', data_ref: 'habits' });
   }
 
-  insights.push({ type: 'summary', title: 'Trading Summary', body: `${m.totalTrades} trades | ${m.winRate.toFixed(1)}% win rate | ${formatCurrency(m.totalPnl)} P&L | PF ${m.profitFactor.toFixed(2)} | Avg RR ${m.avgRr.toFixed(2)}`, severity: m.totalPnl >= 0 ? 'success' : 'warning', dataRef: 'summary' });
+  insights.push({ type: 'summary', title: 'Trading Summary', body: `${m.totalTrades} trades | ${m.winRate.toFixed(1)}% win rate | ${formatCurrency(m.totalPnl)} P&L | PF ${m.profitFactor.toFixed(2)} | Avg RR ${m.avgRr.toFixed(2)}`, severity: m.totalPnl >= 0 ? 'success' : 'warning', data_ref: 'summary' });
   return insights;
 }
 
@@ -150,7 +150,7 @@ export function calculatePsychologyScore(ctx: AiContext): AiScoreResult {
   };
   const confidence = avg('confidence');
   const discipline = avg('discipline');
-  const stress = avg('stress_level');
+  const stress = avg('execution_quality');
   const fomo = avg('fomo');
   const patience = avg('patience');
   const score = Math.round(Math.max(0, Math.min(100, (confidence * 10 + (discipline || 5) * 10 + (patience || 5) * 10 - (stress || 3) * 5 - (fomo || 3) * 5) / 3)));
@@ -186,30 +186,30 @@ export function generateRecommendations(ctx: AiContext): Omit<import('@/lib/supa
   if (m.totalTrades === 0) return recs;
 
   const worstSession = Object.entries(m.bySession).sort((a, b) => a[1].pnl - b[1].pnl)[0];
-  if (worstSession && worstSession[1].pnl < 0) recs.push({ category: 'risk', priority: 'high', title: `Avoid ${worstSession[0]} session`, body: `You've lost ${formatCurrency(worstSession[1].pnl)} in the ${worstSession[0]} session across ${worstSession[1].trades} trades. Consider reducing activity or avoiding this session entirely.`, dataRef: 'worst_session' });
+  if (worstSession && worstSession[1].pnl < 0) recs.push({ category: 'risk', priority: 'high', title: `Avoid ${worstSession[0]} session`, body: `You've lost ${formatCurrency(worstSession[1].pnl)} in the ${worstSession[0]} session across ${worstSession[1].trades} trades. Consider reducing activity or avoiding this session entirely.`, data_ref: 'worst_session' });
 
   const worstInstrument = Object.entries(m.byInstrument).sort((a, b) => a[1].pnl - b[1].pnl)[0];
-  if (worstInstrument && worstInstrument[1].pnl < 0) recs.push({ category: 'strategy', priority: 'medium', title: `Review ${worstInstrument[0]} trades`, body: `${worstInstrument[0]} has lost you ${formatCurrency(worstInstrument[1].pnl)}. Review your last 5 trades on this instrument for patterns.`, dataRef: 'worst_instrument' });
+  if (worstInstrument && worstInstrument[1].pnl < 0) recs.push({ category: 'strategy', priority: 'medium', title: `Review ${worstInstrument[0]} trades`, body: `${worstInstrument[0]} has lost you ${formatCurrency(worstInstrument[1].pnl)}. Review your last 5 trades on this instrument for patterns.`, data_ref: 'worst_instrument' });
 
-  if (m.profitFactor < 1) recs.push({ category: 'risk', priority: 'critical', title: 'Improve risk-reward ratio', body: `Your profit factor is ${m.profitFactor.toFixed(2)}. Focus on cutting losses quickly and letting winners run to improve this above 1.5.`, dataRef: 'profit_factor' });
+  if (m.profitFactor < 1) recs.push({ category: 'risk', priority: 'critical', title: 'Improve risk-reward ratio', body: `Your profit factor is ${m.profitFactor.toFixed(2)}. Focus on cutting losses quickly and letting winners run to improve this above 1.5.`, data_ref: 'profit_factor' });
 
-  if (m.avgRr < 1.5) recs.push({ category: 'risk', priority: 'medium', title: 'Target higher R:R', body: `Your average R:R is ${m.avgRr.toFixed(2)}. Aim for at least 1:2 by adjusting your take profit levels or being more selective with entries.`, dataRef: 'avg_rr' });
+  if (m.avgRr < 1.5) recs.push({ category: 'risk', priority: 'medium', title: 'Target higher R:R', body: `Your average R:R is ${m.avgRr.toFixed(2)}. Aim for at least 1:2 by adjusting your take profit levels or being more selective with entries.`, data_ref: 'avg_rr' });
 
   if (ctx.psychologyLogs.length > 0) {
     const latest = ctx.psychologyLogs[0];
-    if (latest.fomo != null && latest.fomo > 6) recs.push({ category: 'psychology', priority: 'high', title: 'Manage FOMO', body: `Your latest FOMO rating is ${latest.fomo}/10. Before entering a trade, confirm it meets your full checklist — don't chase price.`, dataRef: 'fomo' });
-    if (latest.discipline != null && latest.discipline < 5) recs.push({ category: 'discipline', priority: 'high', title: 'Strengthen discipline', body: `Your discipline rating is ${latest.discipline}/10. Re-commit to your trading plan and use your pre-trade checklist on every trade.`, dataRef: 'discipline' });
+    if (latest.fomo != null && latest.fomo > 6) recs.push({ category: 'psychology', priority: 'high', title: 'Manage FOMO', body: `Your latest FOMO rating is ${latest.fomo}/10. Before entering a trade, confirm it meets your full checklist — don't chase price.`, data_ref: 'fomo' });
+    if (latest.discipline != null && latest.discipline < 5) recs.push({ category: 'discipline', priority: 'high', title: 'Strengthen discipline', body: `Your discipline rating is ${latest.discipline}/10. Re-commit to your trading plan and use your pre-trade checklist on every trade.`, data_ref: 'discipline' });
   }
 
   if (ctx.mistakes.length > 0) {
     const top = ctx.mistakes.sort((a, b) => b.frequency - a.frequency)[0];
-    recs.push({ category: 'discipline', priority: top.severity === 'critical' ? 'critical' : 'medium', title: `Fix: ${top.name}`, body: `"${top.name}" has occurred ${top.frequency} times. ${top.solution || 'Add this mistake to your pre-trade checklist to prevent it.'}`, dataRef: 'top_mistake' });
+    recs.push({ category: 'discipline', priority: top.severity === 'critical' ? 'critical' : 'medium', title: `Fix: ${top.name}`, body: `"${top.name}" has occurred ${top.frequency} times. ${top.solution || 'Add this mistake to your pre-trade checklist to prevent it.'}`, data_ref: 'top_mistake' });
   }
 
   const incompleteGoals = ctx.goals.filter((g) => !g.completed);
-  if (incompleteGoals.length > 0) recs.push({ category: 'goal', priority: 'low', title: `${incompleteGoals.length} goals need attention`, body: `Goals in progress: ${incompleteGoals.map((g) => g.title).join(', ')}. Review progress and adjust if needed.`, dataRef: 'goals' });
+  if (incompleteGoals.length > 0) recs.push({ category: 'goal', priority: 'low', title: `${incompleteGoals.length} goals need attention`, body: `Goals in progress: ${incompleteGoals.map((g) => g.title).join(', ')}. Review progress and adjust if needed.`, data_ref: 'goals' });
 
-  if (m.maxLossStreak >= 4) recs.push({ category: 'psychology', priority: 'high', title: 'Take a break after losing streaks', body: `Your longest losing streak is ${m.maxLossStreak} trades. After 3 consecutive losses, step away for 24 hours to reset mentally.`, dataRef: 'max_loss_streak' });
+  if (m.maxLossStreak >= 4) recs.push({ category: 'psychology', priority: 'high', title: 'Take a break after losing streaks', body: `Your longest losing streak is ${m.maxLossStreak} trades. After 3 consecutive losses, step away for 24 hours to reset mentally.`, data_ref: 'max_loss_streak' });
 
   return recs;
 }
@@ -252,7 +252,7 @@ export function reviewPsychology(ctx: AiContext): { summary: string; strengths: 
   const confidence = avg('confidence');
   const discipline = avg('discipline');
   const fomo = avg('fomo');
-  const stress = avg('stress_level');
+  const stress = avg('execution_quality');
   const patience = avg('patience');
   if (confidence >= 7) strengths.push(`Strong confidence (${confidence.toFixed(1)}/10)`);
   else weaknesses.push(`Below-average confidence (${confidence.toFixed(1)}/10)`);
