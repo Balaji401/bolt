@@ -530,3 +530,65 @@ export type StrategyCategory = {
   color: string;
   created_at: string;
 };
+
+export type AiConversation = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  session_id: string;
+  title: string;
+  pinned: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiMemory = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  memory_type: 'strategy' | 'habit' | 'mistake' | 'goal' | 'preference' | 'style' | 'observation' | 'rule';
+  key: string;
+  value: string;
+  source: string;
+  created_at: string;
+};
+
+export type AiReview = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  review_type: 'trade' | 'psychology' | 'goal' | 'weekly' | 'monthly' | 'daily';
+  ref_id: string | null;
+  title: string | null;
+  summary: string | null;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  rating: number | null;
+  created_at: string;
+};
+
+export type AiScore = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  score_type: 'trading' | 'psychology' | 'discipline' | 'risk' | 'overall';
+  score: number;
+  breakdown: Record<string, unknown> | null;
+  period: string;
+  created_at: string;
+};
+
+export type AiRecommendation = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  category: 'risk' | 'psychology' | 'discipline' | 'strategy' | 'habit' | 'goal' | 'general';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  body: string;
+  data_ref: string | null;
+  action_taken: boolean;
+  dismissed: boolean;
+  created_at: string;
+};
