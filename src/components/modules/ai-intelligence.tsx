@@ -1,30 +1,61 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Brain, Sparkles, MessageSquare, Gauge, HeartPulse, Target, Lightbulb, TrendingUp, FileSearch } from 'lucide-react';
-import type { Trade, Strategy, PsychologyLog, TradingGoal, Habit, Mistake, RiskRules, AiMemory, AiRecommendation, AiChatMessage, AiConversation } from '@/lib/supabase';
+import { Brain, Sparkles, MessageSquare, Gauge, HeartPulse, Target, Lightbulb, TrendingUp, FileSearch, Activity, User, GitBranch, Clock, Sun, AlertTriangle } from 'lucide-react';
+import type { Trade, Strategy, PsychologyLog, TradingGoal, Habit, Mistake, RiskRules, AiMemory, AiRecommendation } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import { useWorkspace } from '@/components/workspace-provider';
 import { buildContext, type AiContext } from '@/lib/ai-context';
+import { computeMetrics } from '@/lib/analytics';
+import {
+  detectBehaviorPatterns,
+  analyzeCorrelations,
+  buildTraderProfile,
+  calculateCompositeScore,
+  generateBehaviorTimeline,
+  generateComparisons,
+  generateDailyIntelligence,
+  generateWeeklyIntelligence,
+} from '@/lib/ai-intelligence';
 import { AiDashboard } from '@/components/ai/dashboard';
 import { AiCoach } from '@/components/ai/coach';
 import { AiChat } from '@/components/ai/chat';
-import { AiInsights } from '@/components/ai/insights';
+import { AiInsightsEnhanced } from '@/components/ai/insights-enhanced';
 import { AiMemoryPanel } from '@/components/ai/memory';
 import { AiTradeReview } from '@/components/ai/trade-review';
 import { AiPsychologyReview } from '@/components/ai/psychology-review';
 import { AiRecommendations } from '@/components/ai/recommendations';
+import { BehaviorPatterns } from '@/components/ai/behavior-patterns';
+import { Correlations } from '@/components/ai/correlations';
+import { TraderProfile } from '@/components/ai/trader-profile';
+import { TradingScore } from '@/components/ai/trading-score';
+import { Comparisons } from '@/components/ai/comparisons';
+import { BehaviorTimeline } from '@/components/ai/behavior-timeline';
+import { DailyIntelligenceCard, WeeklyIntelligenceCard } from '@/components/ai/intelligence-reports';
 import { EmptyState, ErrorState, LoadingState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
 
-type AiTab = 'dashboard' | 'coach' | 'chat' | 'insights' | 'memory' | 'trade-review' | 'psychology-review' | 'recommendations';
+type AiTab =
+  | 'dashboard' | 'coach' | 'chat' | 'insights' | 'memory'
+  | 'trade-review' | 'psychology-review' | 'recommendations'
+  | 'patterns' | 'correlations' | 'profile' | 'score' | 'comparisons'
+  | 'timeline' | 'daily' | 'weekly';
+
 const TABS: { id: AiTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: Brain },
+  { id: 'patterns', label: 'Patterns', icon: Activity },
+  { id: 'correlations', label: 'Correlations', icon: GitBranch },
+  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'score', label: 'Score', icon: Gauge },
+  { id: 'insights', label: 'Insights', icon: Lightbulb },
+  { id: 'recommendations', label: 'Recommendations', icon: TrendingUp },
+  { id: 'timeline', label: 'Timeline', icon: Clock },
+  { id: 'comparisons', label: 'Comparisons', icon: GitBranch },
+  { id: 'daily', label: 'Daily', icon: Sun },
+  { id: 'weekly', label: 'Weekly', icon: TrendingUp },
   { id: 'coach', label: 'AI Coach', icon: Sparkles },
   { id: 'chat', label: 'AI Chat', icon: MessageSquare },
-  { id: 'insights', label: 'Insights', icon: Lightbulb },
   { id: 'trade-review', label: 'Trade Review', icon: FileSearch },
   { id: 'psychology-review', label: 'Psychology', icon: HeartPulse },
-  { id: 'recommendations', label: 'Recommendations', icon: TrendingUp },
   { id: 'memory', label: 'Memory', icon: Target },
 ];
 
@@ -85,6 +116,17 @@ export function AiIntelligence({ trades }: { trades: Trade[] }) {
     memory,
   }), [workspace, activeAccount, trades, strategies, psychologyLogs, goals, habits, mistakes, riskRules, memory]);
 
+  const metrics = useMemo(() => computeMetrics(trades), [trades]);
+
+  const patterns = useMemo(() => detectBehaviorPatterns(trades, psychologyLogs, mistakes, riskRules), [trades, psychologyLogs, mistakes, riskRules]);
+  const correlations = useMemo(() => analyzeCorrelations(trades, strategies, psychologyLogs), [trades, strategies, psychologyLogs]);
+  const profile = useMemo(() => buildTraderProfile(trades, strategies, psychologyLogs, mistakes, metrics), [trades, strategies, psychologyLogs, mistakes, metrics]);
+  const score = useMemo(() => calculateCompositeScore(trades, psychologyLogs, mistakes, goals, habits, metrics), [trades, psychologyLogs, mistakes, goals, habits, metrics]);
+  const timeline = useMemo(() => generateBehaviorTimeline(trades, psychologyLogs, metrics), [trades, psychologyLogs, metrics]);
+  const comparisons = useMemo(() => generateComparisons(trades, metrics), [trades, metrics]);
+  const dailyIntel = useMemo(() => generateDailyIntelligence(trades, psychologyLogs, mistakes), [trades, psychologyLogs, mistakes]);
+  const weeklyIntel = useMemo(() => generateWeeklyIntelligence(trades, psychologyLogs, mistakes, goals, metrics), [trades, psychologyLogs, mistakes, goals, metrics]);
+
   const updateRec = async (id: string, updates: Partial<AiRecommendation>) => {
     await supabase.from('ai_recommendations').update(updates).eq('id', id);
     setRecommendations((prev) => prev.map((r) => r.id === id ? { ...r, ...updates } : r));
@@ -114,12 +156,20 @@ export function AiIntelligence({ trades }: { trades: Trade[] }) {
       ) : (
         <>
           {tab === 'dashboard' && <AiDashboard ctx={ctx} onNavigate={(t) => setTab(t as AiTab)} />}
+          {tab === 'patterns' && <BehaviorPatterns patterns={patterns} />}
+          {tab === 'correlations' && <Correlations correlations={correlations} />}
+          {tab === 'profile' && <TraderProfile profile={profile} />}
+          {tab === 'score' && <TradingScore result={score} />}
+          {tab === 'insights' && <AiInsightsEnhanced ctx={ctx} />}
+          {tab === 'recommendations' && <AiRecommendations recommendations={recommendations} onAction={(id) => updateRec(id, { action_taken: true })} onDismiss={(id) => updateRec(id, { dismissed: true })} />}
+          {tab === 'timeline' && <BehaviorTimeline events={timeline} />}
+          {tab === 'comparisons' && <Comparisons comparisons={comparisons} />}
+          {tab === 'daily' && <DailyIntelligenceCard data={dailyIntel} />}
+          {tab === 'weekly' && <WeeklyIntelligenceCard data={weeklyIntel} />}
           {tab === 'coach' && <AiCoach ctx={ctx} workspaceId={workspace?.id || null} />}
           {tab === 'chat' && <AiChat ctx={ctx} workspaceId={workspace?.id || null} />}
-          {tab === 'insights' && <AiInsights ctx={ctx} />}
           {tab === 'trade-review' && <AiTradeReview ctx={ctx} />}
           {tab === 'psychology-review' && <AiPsychologyReview ctx={ctx} />}
-          {tab === 'recommendations' && <AiRecommendations recommendations={recommendations} onAction={(id) => updateRec(id, { action_taken: true })} onDismiss={(id) => updateRec(id, { dismissed: true })} />}
           {tab === 'memory' && <AiMemoryPanel memory={memory} workspaceId={workspace?.id || null} onRefresh={load} />}
         </>
       )}

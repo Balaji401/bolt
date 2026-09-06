@@ -1,5 +1,5 @@
 'use client';
-import { Brain, Gauge, HeartPulse, MessageSquare, Sparkles, Target, TrendingUp, Award, AlertTriangle, Lightbulb } from 'lucide-react';
+import { Brain, Gauge, HeartPulse, MessageSquare, Sparkles, Target, TrendingUp, Award, AlertTriangle, Lightbulb, Activity, User, GitBranch, Clock, Sun } from 'lucide-react';
 import type { AiContext } from '@/lib/ai-context';
 import { calculateTradingScore, calculatePsychologyScore, calculateDisciplineScore, generateInsights } from '@/lib/ai-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,11 +15,25 @@ export function AiDashboard({ ctx, onNavigate }: { ctx: AiContext; onNavigate: (
     { label: 'Psychology Score', value: psychology.score, icon: HeartPulse, color: psychology.score >= 60 ? 'text-success' : psychology.score >= 40 ? 'text-warning' : 'text-destructive' },
     { label: 'Discipline Score', value: discipline.score, icon: Gauge, color: discipline.score >= 60 ? 'text-success' : discipline.score >= 40 ? 'text-warning' : 'text-destructive' },
   ];
+  const navCards = [
+    { label: 'AI Coach', icon: Sparkles, tab: 'coach' },
+    { label: 'AI Chat', icon: MessageSquare, tab: 'chat' },
+    { label: 'Patterns', icon: Activity, tab: 'patterns' },
+    { label: 'Correlations', icon: GitBranch, tab: 'correlations' },
+    { label: 'Trader Profile', icon: User, tab: 'profile' },
+    { label: 'Trading Score', icon: Gauge, tab: 'score' },
+    { label: 'AI Insights', icon: Brain, tab: 'insights' },
+    { label: 'AI Memory', icon: Target, tab: 'memory' },
+    { label: 'Timeline', icon: Clock, tab: 'timeline' },
+    { label: 'Comparisons', icon: GitBranch, tab: 'comparisons' },
+    { label: 'Daily Intel', icon: Sun, tab: 'daily' },
+    { label: 'Weekly Intel', icon: TrendingUp, tab: 'weekly' },
+  ];
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {scoreCards.map((card) => (
-          <Card key={card.label} className="hover:border-primary/20 transition-colors cursor-pointer" onClick={() => onNavigate('insights')}>
+          <Card key={card.label} className="hover:border-primary/20 transition-colors cursor-pointer" onClick={() => onNavigate('score')}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between"><card.icon className={cn('w-4 h-4', card.color)} /><span className="text-2xl font-bold">{card.value}</span></div>
               <div className="text-xs text-muted-foreground mt-2">{card.label}</div>
@@ -29,12 +43,7 @@ export function AiDashboard({ ctx, onNavigate }: { ctx: AiContext; onNavigate: (
         ))}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'AI Coach', icon: Sparkles, tab: 'coach' },
-          { label: 'AI Chat', icon: MessageSquare, tab: 'chat' },
-          { label: 'AI Insights', icon: Brain, tab: 'insights' },
-          { label: 'AI Memory', icon: Target, tab: 'memory' },
-        ].map((item) => (
+        {navCards.map((item) => (
           <Card key={item.label} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => onNavigate(item.tab)}>
             <CardContent className="p-4 flex flex-col items-center gap-2"><item.icon className="w-5 h-5 text-primary" /><span className="text-xs font-medium">{item.label}</span></CardContent>
           </Card>
