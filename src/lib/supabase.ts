@@ -592,3 +592,97 @@ export type AiRecommendation = {
   dismissed: boolean;
   created_at: string;
 };
+
+export type AiInsightRecord = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  insight_type: string;
+  title: string;
+  body: string;
+  severity: 'info' | 'success' | 'warning' | 'critical';
+  confidence: 'high' | 'medium' | 'low';
+  data_ref: string | null;
+  evidence_refs: { type: string; ref_id: string; label: string }[];
+  feedback: 'useful' | 'not_useful' | 'correct' | 'incorrect' | 'saved' | 'dismissed' | null;
+  generated_at: string;
+  created_at: string;
+};
+
+export type AiInsightEvidence = {
+  id: string;
+  insight_id: string;
+  user_id: string;
+  evidence_type: 'trade' | 'journal' | 'metric' | 'psychology_log' | 'goal' | 'habit' | 'mistake' | 'strategy';
+  ref_id: string | null;
+  ref_table: string | null;
+  label: string | null;
+  detail: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AiBehaviorPattern = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  pattern_type: 'revenge_trading' | 'fomo' | 'overtrading' | 'early_exit' | 'late_entry' | 'increasing_risk_after_loss' | 'breaking_rules' | 'trading_outside_session' | 'trading_outside_strategy' | 'repeated_mistakes' | 'inconsistent_sizing' | 'chasing_losses';
+  title: string;
+  description: string;
+  confidence: 'high' | 'medium' | 'low';
+  severity: 'info' | 'warning' | 'critical';
+  occurrence_count: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  evidence_refs: { type: string; ref_id: string; label: string }[];
+  dismissed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiTraderProfile = {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  trading_style: string | null;
+  preferred_markets: string[];
+  preferred_instruments: string[];
+  preferred_sessions: string[];
+  preferred_timeframes: string[];
+  typical_risk_pct: number;
+  typical_holding_minutes: number | null;
+  strong_strategies: string[];
+  weak_strategies: string[];
+  common_mistakes: string[];
+  psychological_patterns: string[];
+  strengths: string[];
+  weaknesses: string[];
+  learning_priorities: string[];
+  profile_data: Record<string, unknown>;
+  updated_at: string;
+  created_at: string;
+};
+
+export type AiBehaviorEvent = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  event_type: 'risk_change' | 'drawdown_change' | 'psychology_change' | 'behavior_change' | 'performance_change' | 'streak_change' | 'rule_violation' | 'milestone';
+  title: string;
+  description: string;
+  severity: 'info' | 'warning' | 'critical' | 'success';
+  event_date: string;
+  metric_value: number | null;
+  previous_value: number | null;
+  evidence_refs: { type: string; ref_id: string; label: string }[];
+  created_at: string;
+};
+
+export type AiInsightFeedback = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  insight_id: string;
+  feedback_type: 'useful' | 'not_useful' | 'correct' | 'incorrect' | 'saved' | 'dismissed' | 'ignored';
+  comment: string | null;
+  created_at: string;
+};
