@@ -19,6 +19,7 @@ import { NewsCenter } from '@/components/modules/news';
 import { Brokers } from '@/components/modules/brokers';
 import { Accounts } from '@/components/modules/accounts';
 import { Settings } from '@/components/modules/settings';
+import { Reports } from '@/components/modules/reports';
 import { ComingSoon } from '@/components/modules/coming-soon';
 import { AuthPage } from '@/components/auth-page';
 import { AuthProvider, useAuth } from '@/components/auth-provider';
@@ -111,6 +112,7 @@ function AppContent() {
       case 'news':         return <NewsCenter />;
       case 'brokers':      return <Brokers trades={trades} onTradesUpdated={load} />;
       case 'accounts':     return <Accounts />;
+      case 'reports':      return <Reports trades={trades} />;
       case 'settings':     return <Settings />;
       default:             return <ComingSoon moduleKey={active} />;
     }
