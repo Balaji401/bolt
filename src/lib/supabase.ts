@@ -686,3 +686,52 @@ export type AiInsightFeedback = {
   comment: string | null;
   created_at: string;
 };
+
+export type ReportTemplate = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  name: string;
+  description: string | null;
+  report_type: 'performance' | 'trade' | 'risk' | 'psychology' | 'strategy' | 'journal' | 'account' | 'ai_review' | 'custom';
+  filters: Record<string, unknown>;
+  sections: string[];
+  is_custom: boolean;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReportHistoryRecord = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  template_id: string | null;
+  name: string;
+  report_type: 'performance' | 'trade' | 'risk' | 'psychology' | 'strategy' | 'journal' | 'account' | 'ai_review' | 'custom';
+  period_start: string | null;
+  period_end: string | null;
+  account_id: string | null;
+  status: 'generating' | 'generated' | 'failed';
+  filters: Record<string, unknown>;
+  sections: string[];
+  metrics: Record<string, unknown>;
+  include_ai_summary: boolean;
+  created_at: string;
+};
+
+export type ScheduledReport = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  template_id: string;
+  name: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  account_id: string | null;
+  delivery_preference: 'view' | 'download' | 'email';
+  active: boolean;
+  last_generated_at: string | null;
+  next_generation_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
