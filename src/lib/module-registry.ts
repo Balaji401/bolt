@@ -2,7 +2,7 @@ import {
   LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, Target,
   CalendarDays, Newspaper, HeartPulse, Plug, MessageSquare, Trophy,
   Brain, Crosshair, Layers, Building2, LineChart, Settings, ShieldCheck,
-  Network, Wallet, FileBarChart, type LucideIcon,
+  Network, Wallet, FileBarChart, Zap, Bell, type LucideIcon,
 } from 'lucide-react';
 
 export type ModuleKey =
@@ -10,7 +10,7 @@ export type ModuleKey =
   | 'achievements' | 'plan' | 'psychology' | 'calendar' | 'news' | 'brokers'
   | 'accounts'
   | 'strategy_intelligence' | 'decision_intelligence' | 'multi_account_intelligence'
-  | 'prop_firms' | 'market_intelligence' | 'ai_intelligence' | 'strategy' | 'reports' | 'settings' | 'admin';
+  | 'prop_firms' | 'market_intelligence' | 'ai_intelligence' | 'strategy' | 'reports' | 'automation' | 'settings' | 'admin';
 
 export type ModuleGroup = 'Overview' | 'Intelligence' | 'Connections' | 'Tools' | 'System';
 export type ModuleVisibility = 'all' | 'pro' | 'elite' | 'admin';
@@ -47,6 +47,7 @@ export const MODULES: ModuleMeta[] = [
   { key: 'risk', label: 'Risk Management', icon: Calculator, group: 'Tools', visibility: 'all', meta: { title: 'Risk Management', subtitle: 'Professional calculators for every position' }, keywords: ['risk', 'position size'] },
   { key: 'plan', label: 'Trading Plan', icon: Target, group: 'Tools', visibility: 'all', meta: { title: 'Trading Plan', subtitle: 'Define your rules, follow your plan' }, keywords: ['plan', 'rules'] },
   { key: 'reports', label: 'Reports', icon: FileBarChart, group: 'Tools', visibility: 'all', meta: { title: 'Reports & Reviews', subtitle: 'Generate, export, and schedule trading reports' }, keywords: ['report', 'export', 'pdf', 'csv'] },
+  { key: 'automation', label: 'Automation', icon: Zap, group: 'Tools', visibility: 'all', meta: { title: 'Automation & Notifications', subtitle: 'Create rules that trigger notifications and actions' }, keywords: ['automation', 'notification', 'alert', 'workflow', 'trigger'] },
   { key: 'calendar', label: 'Economic Calendar', icon: CalendarDays, group: 'Tools', visibility: 'all', meta: { title: 'Economic Calendar', subtitle: 'Market-moving events at a glance' }, keywords: ['calendar', 'events'] },
   { key: 'news', label: 'News Center', icon: Newspaper, group: 'Tools', visibility: 'all', meta: { title: 'News Center', subtitle: 'AI-curated financial news' }, keywords: ['news', 'headlines'] },
   { key: 'settings', label: 'Settings', icon: Settings, group: 'System', visibility: 'all', meta: { title: 'Settings', subtitle: 'Configure your TraderOS workspace' }, keywords: ['settings', 'config'] },

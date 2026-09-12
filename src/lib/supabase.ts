@@ -735,3 +735,89 @@ export type ScheduledReport = {
   created_at: string;
   updated_at: string;
 };
+
+export type Automation = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  name: string;
+  description: string | null;
+  trigger_type: AutomationTriggerType;
+  trigger_config: Record<string, unknown>;
+  conditions: AutomationCondition[];
+  condition_logic: 'and' | 'or';
+  action_type: AutomationActionType;
+  action_config: Record<string, unknown>;
+  schedule_config: Record<string, unknown>;
+  status: 'active' | 'paused' | 'draft';
+  last_run_at: string | null;
+  next_run_at: string | null;
+  run_count: number;
+  failure_count: number;
+  max_retries: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AutomationTriggerType =
+  | 'trade_created' | 'trade_closed' | 'daily_loss_limit' | 'weekly_loss_limit'
+  | 'drawdown_threshold' | 'journal_not_completed' | 'goal_deadline_approaching'
+  | 'habit_missed' | 'report_generated' | 'ai_review_completed'
+  | 'schedule_daily' | 'schedule_weekly' | 'schedule_monthly' | 'schedule_specific';
+
+export type AutomationActionType =
+  | 'send_notification' | 'create_reminder' | 'generate_report'
+  | 'start_ai_review' | 'add_journal_reminder' | 'update_goal_status' | 'create_task';
+
+export type AutomationCondition = {
+  field: string;
+  operator: string;
+  value: string | number | boolean;
+};
+
+export type AutomationExecution = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  automation_id: string;
+  trigger_type: string;
+  status: 'success' | 'failed' | 'running' | 'skipped';
+  executed_at: string;
+  duration_ms: number;
+  result: Record<string, unknown>;
+  error: string | null;
+  retried: boolean;
+  retry_of: string | null;
+  created_at: string;
+};
+
+export type NotificationRecord = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  category: 'risk' | 'trading' | 'journal' | 'goals' | 'reports' | 'ai' | 'system';
+  priority: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  related_type: string | null;
+  related_id: string | null;
+  read: boolean;
+  archived: boolean;
+  action_url: string | null;
+  action_label: string | null;
+  created_at: string;
+  read_at: string | null;
+};
+
+export type NotificationPreference = {
+  id: string;
+  user_id: string;
+  workspace_id: string | null;
+  category: 'risk' | 'trading' | 'journal' | 'goals' | 'reports' | 'ai' | 'system';
+  in_app_enabled: boolean;
+  email_enabled: boolean;
+  push_enabled: boolean;
+  min_priority: 'info' | 'warning' | 'critical';
+  created_at: string;
+  updated_at: string;
+};
