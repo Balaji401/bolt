@@ -15,6 +15,7 @@ type AuthState = {
   subscription: Subscription | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   signOutAllDevices: () => Promise<{ error: string | null }>;
@@ -106,6 +107,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) return { error: friendlyAuthError(error) };
+    return { error: null };
+  }, []);
+
   const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
     const name = displayName || email.split('@')[0];
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
@@ -176,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, profile, subscription, loading,
-      signIn, signUp, signOut, signOutAllDevices, resetPassword, changePassword, updateProfile, deleteAccount, refresh,
+      signIn, signInWithGoogle, signUp, signOut, signOutAllDevices, resetPassword, changePassword, updateProfile, deleteAccount, refresh,
     }}>
       {children}
     </AuthContext.Provider>
