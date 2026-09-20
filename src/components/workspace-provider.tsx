@@ -89,7 +89,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const setActiveAccountId = useCallback((id: string) => {
     setActiveAccountIdState(id);
     if (user) localStorage.setItem(getActiveAccountKey(user.id), id);
-  }, []);
+  }, [user]);
 
   const refreshAccounts = useCallback(async () => {
     if (!workspace) return;
