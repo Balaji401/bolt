@@ -70,7 +70,7 @@ export function Coach({ trades, insights, onRegenerated }: { trades: Trade[]; in
   );
 }
 
-function generateLocalInsights(metrics: ReturnType<typeof computeMetrics>, trades: Trade[]): Omit<AiInsight, 'id' | 'created_at' | 'user_id' | 'workspace_id' | 'account_id'>[] {
+function generateLocalInsights(metrics: ReturnType<typeof computeMetrics>, trades: Trade[]): Array<Omit<AiInsight, 'id' | 'created_at' | 'user_id' | 'workspace_id' | 'account_id'>> {
   const insights: Omit<AiInsight, 'id' | 'created_at' | 'user_id' | 'workspace_id' | 'account_id'>[] = [];
   if (metrics.winRate < 40) insights.push({ insight_type: 'warning', title: 'Low Win Rate', body: `Your win rate is ${metrics.winRate.toFixed(1)}%. Consider tightening your entry criteria or waiting for higher-quality setups.`, severity: 'warning', metric_ref: 'win_rate' });
   if (metrics.winRate >= 60) insights.push({ insight_type: 'strength', title: 'Strong Win Rate', body: `Your win rate of ${metrics.winRate.toFixed(1)}% is above average. Keep doing what you're doing.`, severity: 'success', metric_ref: 'win_rate' });
