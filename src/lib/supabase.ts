@@ -723,6 +723,7 @@ export type ReportHistoryRecord = {
   period_start: string | null;
   period_end: string | null;
   account_id: string | null;
+  account_id_uuid: string | null;
   status: 'generating' | 'generated' | 'failed';
   filters: Record<string, unknown>;
   sections: string[];
@@ -739,6 +740,7 @@ export type ScheduledReport = {
   name: string;
   frequency: 'daily' | 'weekly' | 'monthly';
   account_id: string | null;
+  account_id_uuid: string | null;
   delivery_preference: 'view' | 'download' | 'email';
   active: boolean;
   last_generated_at: string | null;
