@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+  // Support both the current Vite names and the legacy Vercel names during the migration.
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   plugins: [react()],
   resolve: {
     alias: {
