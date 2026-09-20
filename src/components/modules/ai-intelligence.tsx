@@ -84,7 +84,7 @@ export function AiIntelligence({ trades }: { trades: Trade[] }) {
         supabase.from('habits').select('*').eq('workspace_id', workspace.id),
         supabase.from('mistakes').select('*').eq('workspace_id', workspace.id),
         supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).maybeSingle(),
-        supabase.from('ai_memory').select('*').order('created_at', { ascending: false }),
+        supabase.from('ai_memory').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
         supabase.from('ai_recommendations').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
       ]);
       setStrategies((stratRes.data || []) as Strategy[]);
