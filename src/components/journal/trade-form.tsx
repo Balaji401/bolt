@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useWorkspace } from '@/components/workspace-provider';
 import { X, Upload, Image as ImageIcon, Plus, Tag as TagIcon } from 'lucide-react';
 import type { Trade, TradeTag } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
@@ -50,6 +51,7 @@ type FormData = {
 };
 
 export function TradeForm({ trade, onClose, onSaved }: { trade: Trade | null; onClose: () => void; onSaved: () => void }) {
+  const { activeAccount } = useWorkspace();
   const [form, setForm] = useState<FormData>({
     instrument: trade?.instrument || '',
     market: trade?.market || '',
@@ -153,9 +155,12 @@ export function TradeForm({ trade, onClose, onSaved }: { trade: Trade | null; on
   const handleSave = async () => {
     const validationError = validate();
     if (validationError) { setError(validationError); return; }
+    if (!activeAccount) { setError('Select a trading account before saving a trade.'); return; }
     setSaving(true);
     setError(null);
     const data: Record<string, unknown> = {
+      account_id: activeAccount.id,
+      workspace_id: activeAccount.workspace_id,
       instrument: form.instrument.toUpperCase().trim(),
       market: form.market || null,
       direction: form.direction,
