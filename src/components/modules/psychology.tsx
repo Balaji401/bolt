@@ -40,7 +40,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
 ];
 
 export function Psychology({ trades }: { trades: Trade[] }) {
-  const { workspace } = useWorkspace();
+  const { workspace, activeAccount } = useWorkspace();
   const [tab, setTab] = useState<Tab>('dashboard');
   const [psychLogs, setPsychLogs] = useState<PsychologyLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,11 +49,12 @@ export function Psychology({ trades }: { trades: Trade[] }) {
 
   const load = useCallback(async () => {
     setError(false);
-    const { data, error } = await supabase.from('psychology_logs').select('*').order('log_date', { ascending: false }).limit(30);
+    if (!activeAccount) { setPsychLogs([]); setLoading(false); return; }
+    const { data, error } = await supabase.from('psychology_logs').select('*').eq('user_id', activeAccount.user_id).eq('workspace_id', activeAccount.workspace_id).order('log_date', { ascending: false }).limit(30);
     if (error) { setError(true); setLoading(false); return; }
     setPsychLogs((data || []) as PsychologyLog[]);
     setLoading(false);
-  }, []);
+  }, [activeAccount?.id]);
 
   useEffect(() => { load(); }, [load]);
 
