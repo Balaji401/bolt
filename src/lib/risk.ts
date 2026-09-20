@@ -49,6 +49,7 @@ const DEFAULT_RULES: RiskRules = {
   id: '',
   user_id: '',
   workspace_id: '',
+  account_id: null,
   max_daily_loss_pct: 3,
   max_weekly_loss_pct: 6,
   max_monthly_loss_pct: 10,
