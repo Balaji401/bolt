@@ -40,7 +40,7 @@ export function Brokers({ trades, onTradesUpdated }: { trades: Trade[]; onTrades
       const [c, p, j] = await Promise.all([
         supabase.from('broker_connections').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
         supabase.from('open_positions').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('opened_at', { ascending: false }),
-        supabase.from('import_jobs').select('*').order('created_at', { ascending: false }).limit(20),
+        supabase.from('import_jobs').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }).limit(20),
       ]);
       setConnections((c.data || []) as BrokerConnection[]);
       setPositions((p.data || []) as OpenPosition[]);
