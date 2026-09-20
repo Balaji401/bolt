@@ -60,15 +60,16 @@ export function RiskManagement({ trades }: { trades: Trade[] }) {
 
   // Load risk rules
   const loadRules = useCallback(async () => {
-    if (!workspace) return;
+    if (!workspace || !activeAccount) return;
     const { data } = await supabase
       .from('risk_rules')
       .select('*')
       .eq('workspace_id', workspace.id)
+      .eq('account_id', activeAccount?.id || '__no_active_account__')
       .maybeSingle();
     if (data) setRules(data as RiskRules);
-    else setRules({ ...getDefaultRules(), workspace_id: workspace.id, user_id: workspace.user_id });
-  }, [workspace]);
+    else setRules({ ...getDefaultRules(), workspace_id: workspace.id, user_id: workspace.user_id, account_id: activeAccount.id });
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { loadRules(); }, [loadRules]);
 
