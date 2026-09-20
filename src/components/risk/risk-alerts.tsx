@@ -12,21 +12,22 @@ import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/lib/format';
 
 export function RiskAlertsPanel({ metrics, rules, trades }: { metrics: RiskMetrics; rules: RiskRules; trades: Trade[] }) {
-  const { workspace } = useWorkspace();
+  const { workspace, activeAccount } = useWorkspace();
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAlerts = useCallback(async () => {
-    if (!workspace) return;
+    if (!workspace || !activeAccount) return;
     const { data } = await supabase
       .from('risk_alerts')
       .select('*')
       .eq('workspace_id', workspace.id)
+      .eq('account_id', activeAccount.id)
       .order('created_at', { ascending: false })
       .limit(50);
     setAlerts((data || []) as RiskAlert[]);
     setLoading(false);
-  }, [workspace]);
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { loadAlerts(); }, [loadAlerts]);
 
@@ -34,7 +35,7 @@ export function RiskAlertsPanel({ metrics, rules, trades }: { metrics: RiskMetri
   const liveAlerts = generateRiskAlerts(metrics, rules, trades);
 
   const acknowledge = async (id: string) => {
-    await supabase.from('risk_alerts').update({ acknowledged: true }).eq('id', id);
+    await supabase.from('risk_alerts').update({ acknowledged: true }).eq('id', id).eq('account_id', activeAccount?.id || '__no_active_account__');
     setAlerts((prev) => prev.map((a) => a.id === id ? { ...a, acknowledged: true } : a));
   };
 
@@ -44,8 +45,8 @@ export function RiskAlertsPanel({ metrics, rules, trades }: { metrics: RiskMetri
   };
 
   const clearAll = async () => {
-    if (!workspace) return;
-    await supabase.from('risk_alerts').delete().eq('workspace_id', workspace.id).eq('acknowledged', true);
+    if (!workspace || !activeAccount) return;
+    await supabase.from('risk_alerts').delete().eq('workspace_id', workspace.id).eq('account_id', activeAccount.id).eq('acknowledged', true);
     setAlerts((prev) => prev.filter((a) => !a.acknowledged));
   };
 
