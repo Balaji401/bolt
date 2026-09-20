@@ -23,6 +23,8 @@ const WorkspaceContext = createContext<WorkspaceState | undefined>(undefined);
 
 const ACTIVE_ACCOUNT_KEY = 'traderos-active-account';
 
+const getActiveAccountKey = (userId: string) => `${ACTIVE_ACCOUNT_KEY}:${userId}`;
+
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -67,14 +69,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
       setAccounts(accts);
 
-      const savedId = localStorage.getItem(ACTIVE_ACCOUNT_KEY);
+      const accountStorageKey = getActiveAccountKey(user.id);
+      const savedId = localStorage.getItem(accountStorageKey);
       const defaultAcct = accts.find((a) => a.is_default && a.status === 'active');
       const savedAcct = accts.find((a) => a.id === savedId && a.status === 'active');
       const firstActive = accts.find((a) => a.status === 'active');
       const chosen = savedAcct || defaultAcct || firstActive || null;
       if (chosen) {
         setActiveAccountIdState(chosen.id);
-        localStorage.setItem(ACTIVE_ACCOUNT_KEY, chosen.id);
+        localStorage.setItem(accountStorageKey, chosen.id);
       } else {
         setActiveAccountIdState(null);
       }
@@ -85,7 +88,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const setActiveAccountId = useCallback((id: string) => {
     setActiveAccountIdState(id);
-    localStorage.setItem(ACTIVE_ACCOUNT_KEY, id);
+    if (user) localStorage.setItem(getActiveAccountKey(user.id), id);
   }, []);
 
   const refreshAccounts = useCallback(async () => {
