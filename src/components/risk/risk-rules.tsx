@@ -11,23 +11,24 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export function RiskRulesEditor({ onSaved }: { onSaved?: (rules: RiskRules) => void }) {
-  const { workspace } = useWorkspace();
+  const { workspace, activeAccount } = useWorkspace();
   const [rules, setRules] = useState<RiskRules>(getDefaultRules());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const loadRules = useCallback(async () => {
-    if (!workspace) return;
+    if (!workspace || !activeAccount) return;
     const { data } = await supabase
       .from('risk_rules')
       .select('*')
       .eq('workspace_id', workspace.id)
+      .eq('account_id', activeAccount.id)
       .maybeSingle();
     if (data) setRules(data as RiskRules);
-    else setRules({ ...getDefaultRules(), workspace_id: workspace.id, user_id: workspace.user_id });
+    else setRules({ ...getDefaultRules(), workspace_id: workspace.id, user_id: workspace.user_id, account_id: activeAccount.id });
     setLoading(false);
-  }, [workspace]);
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { loadRules(); }, [loadRules]);
 
@@ -37,9 +38,9 @@ export function RiskRulesEditor({ onSaved }: { onSaved?: (rules: RiskRules) => v
   };
 
   const save = async () => {
-    if (!workspace) return;
+    if (!workspace || !activeAccount) return;
     setSaving(true);
-    const payload = { ...rules, workspace_id: workspace.id, user_id: workspace.user_id, updated_at: new Date().toISOString() };
+    const payload = { ...rules, workspace_id: workspace.id, user_id: workspace.user_id, account_id: activeAccount.id, updated_at: new Date().toISOString() };
     if (rules.id) {
       await supabase.from('risk_rules').update(payload).eq('id', rules.id);
     } else {
@@ -52,7 +53,7 @@ export function RiskRulesEditor({ onSaved }: { onSaved?: (rules: RiskRules) => v
   };
 
   const reset = () => {
-    setRules({ ...getDefaultRules(), workspace_id: workspace?.id || '', user_id: workspace?.user_id || '' });
+    setRules({ ...getDefaultRules(), workspace_id: workspace?.id || '', user_id: workspace?.user_id || '', account_id: activeAccount?.id || null });
     setSaved(false);
   };
 
