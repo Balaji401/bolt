@@ -127,8 +127,7 @@ function AppContent() {
   };
 
   return (
-    <WorkspaceProvider>
-      <div className="flex min-h-screen">
+    <div className="flex min-h-screen">
         <Sidebar active={active} onSelect={handleSelect} onShowPlans={() => {}} onSignOut={signOut} profile={profile} tier={tier} />
         <div className="flex-1 flex flex-col min-w-0">
           <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('ai_intelligence')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => emit('journal:add-trade', undefined, 'page') : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
@@ -148,7 +147,6 @@ function AppContent() {
         <MobileNav active={active} onSelect={handleSelect} />
         <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} onNavigate={handleSelect} onNewTrade={() => handleSelect('journal')} onImportTrades={() => handleSelect('brokers')} onOpenChat={() => handleSelect('ai_intelligence')} />
       </div>
-    </WorkspaceProvider>
   );
 }
 
@@ -158,7 +156,9 @@ export default function App() {
       <ThemeProvider>
         <TimezoneProvider>
           <AuthProvider>
-            <AppContent />
+            <WorkspaceProvider>
+              <AppContent />
+            </WorkspaceProvider>
           </AuthProvider>
         </TimezoneProvider>
       </ThemeProvider>
