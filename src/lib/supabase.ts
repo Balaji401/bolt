@@ -315,6 +315,7 @@ export type DailyJournal = {
   id: string;
   user_id: string;
   workspace_id: string;
+  account_id: string | null;
   journal_date: string;
   sleep_quality: number | null;
   energy_level: number | null;
@@ -340,6 +341,7 @@ export type WeeklyReview = {
   id: string;
   user_id: string;
   workspace_id: string;
+  account_id: string | null;
   week_start: string;
   week_end: string;
   trades_taken: number;
@@ -360,6 +362,7 @@ export type MonthlyReview = {
   id: string;
   user_id: string;
   workspace_id: string;
+  account_id: string | null;
   month_year: string;
   performance_summary: string | null;
   discipline_review: string | null;
