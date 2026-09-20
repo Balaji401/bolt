@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -14,6 +14,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 export type Trade = {
   id: string;
+  user_id: string | null;
+  workspace_id: string | null;
+  account_id: string | null;
   instrument: string;
   direction: 'long' | 'short';
   entry_price: number;
@@ -99,6 +102,9 @@ export type CsvMappingTemplate = {
 
 export type AiInsight = {
   id: string;
+  user_id: string | null;
+  workspace_id: string | null;
+  account_id: string | null;
   insight_type: 'warning' | 'strength' | 'suggestion' | 'observation' | 'summary';
   title: string;
   body: string;

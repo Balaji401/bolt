@@ -29,7 +29,7 @@ const GOAL_CATEGORIES = [
 const PRIORITIES = ['low', 'medium', 'high', 'critical'];
 
 export function GoalManager() {
-  const { workspace } = useWorkspace();
+  const { workspace, activeAccount } = useWorkspace();
   const [goals, setGoals] = useState<TradingGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -38,16 +38,18 @@ export function GoalManager() {
 
   const load = useCallback(async () => {
     if (!workspace) return;
-    const { data } = await supabase.from('trading_goals').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false });
+    if (!activeAccount) { setGoals([]); setLoading(false); return; }
+    const { data } = await supabase.from('trading_goals').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount.id).order('created_at', { ascending: false });
     setGoals((data || []) as TradingGoal[]);
     setLoading(false);
-  }, [workspace]);
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { load(); }, [load]);
 
   const addGoal = async () => {
-    if (!workspace || !form.title.trim()) return;
+    if (!workspace || !activeAccount || !form.title.trim()) return;
     await supabase.from('trading_goals').insert({
+      user_id: activeAccount.user_id, workspace_id: workspace.id, account_id: activeAccount.id,
       title: form.title, goal_type: form.goal_type as any,
       target_value: parseFloat(form.target_value) || 0, current_value: 0,
       period: form.period as any, completed: false,

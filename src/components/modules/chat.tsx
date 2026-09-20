@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
 import { computeMetrics } from '@/lib/analytics';
 import { formatCurrency } from '@/lib/format';
+import { supabase } from '@/lib/supabase';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -27,10 +28,12 @@ export function AiChat({ trades }: { trades: Trade[] }) {
     setInput('');
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Your session has expired. Please sign in again.');
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || '', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}` },
+        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || '', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ message: userMsg, trades: trades.slice(0, 50) }),
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);

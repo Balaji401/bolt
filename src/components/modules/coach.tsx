@@ -11,17 +11,20 @@ import { EmptyState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
 import { emit } from '@/lib/event-bus';
 import { logger } from '@/lib/logger';
+import { useWorkspace } from '@/components/workspace-provider';
 
 export function Coach({ trades, insights, onRegenerated }: { trades: Trade[]; insights: AiInsight[]; onRegenerated: () => void }) {
   const [generating, setGenerating] = useState(false);
+  const { activeAccount } = useWorkspace();
   const metrics = computeMetrics(trades);
 
   const generateInsights = async () => {
+    if (!activeAccount) return;
     setGenerating(true);
     try {
       const generated = generateLocalInsights(metrics, trades);
       for (const insight of generated) {
-        await supabase.from('ai_insights').insert(insight);
+        await supabase.from('ai_insights').insert({ ...insight, user_id: activeAccount.user_id, workspace_id: activeAccount.workspace_id, account_id: activeAccount.id });
       }
       emit('insight:generated', { count: generated.length }, 'coach');
       onRegenerated();
@@ -67,8 +70,8 @@ export function Coach({ trades, insights, onRegenerated }: { trades: Trade[]; in
   );
 }
 
-function generateLocalInsights(metrics: ReturnType<typeof computeMetrics>, trades: Trade[]): Omit<AiInsight, 'id' | 'created_at'>[] {
-  const insights: Omit<AiInsight, 'id' | 'created_at'>[] = [];
+function generateLocalInsights(metrics: ReturnType<typeof computeMetrics>, trades: Trade[]): Array<Omit<AiInsight, 'id' | 'created_at' | 'user_id' | 'workspace_id' | 'account_id'>> {
+  const insights: Omit<AiInsight, 'id' | 'created_at' | 'user_id' | 'workspace_id' | 'account_id'>[] = [];
   if (metrics.winRate < 40) insights.push({ insight_type: 'warning', title: 'Low Win Rate', body: `Your win rate is ${metrics.winRate.toFixed(1)}%. Consider tightening your entry criteria or waiting for higher-quality setups.`, severity: 'warning', metric_ref: 'win_rate' });
   if (metrics.winRate >= 60) insights.push({ insight_type: 'strength', title: 'Strong Win Rate', body: `Your win rate of ${metrics.winRate.toFixed(1)}% is above average. Keep doing what you're doing.`, severity: 'success', metric_ref: 'win_rate' });
   if (metrics.profitFactor < 1) insights.push({ insight_type: 'warning', title: 'Negative Profit Factor', body: `Your profit factor is ${metrics.profitFactor.toFixed(2)}. Your losses exceed your wins. Review your risk management.`, severity: 'critical', metric_ref: 'profit_factor' });

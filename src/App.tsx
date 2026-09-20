@@ -1,4 +1,6 @@
 'use client';
+
+// Workspace context is required by AppContent for account-scoped data loading.
 import { useCallback, useEffect, useState } from 'react';
 import { Sidebar, MobileNav, type ModuleKey } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
@@ -24,7 +26,7 @@ import { Automation } from '@/components/modules/automation';
 import { ComingSoon } from '@/components/modules/coming-soon';
 import { AuthPage } from '@/components/auth-page';
 import { AuthProvider, useAuth } from '@/components/auth-provider';
-import { WorkspaceProvider } from '@/components/workspace-provider';
+import { WorkspaceProvider, useWorkspace } from '@/components/workspace-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { TimezoneProvider } from '@/components/timezone-provider';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -44,6 +46,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showCommand, setShowCommand] = useState(false);
+  const { activeAccount } = useWorkspace();
 
   const handleSelect = useCallback((key: ModuleKey) => {
     setActive(key);
@@ -55,10 +58,15 @@ function AppContent() {
     setLoadError(false);
     try {
       const [t, i, p, g] = await Promise.all([
-        supabase.from('trades').select('*').order('executed_at', { ascending: false }),
-        supabase.from('ai_insights').select('*').order('created_at', { ascending: false }),
-        supabase.from('open_positions').select('*').order('opened_at', { ascending: false }),
-        supabase.from('trading_goals').select('*').order('created_at', { ascending: false }),
+        (() => {
+          let query = supabase.from('trades').select('*').order('executed_at', { ascending: false });
+          if (activeAccount?.id) query = query.eq('account_id', activeAccount.id);
+          else query = query.eq('account_id', '__no_active_account__');
+          return query;
+        })(),
+        supabase.from('ai_insights').select('*').eq('user_id', user?.id || '__no_user__').eq('account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
+        supabase.from('open_positions').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('opened_at', { ascending: false }),
+        supabase.from('trading_goals').select('*').eq('user_id', user?.id || '__no_user__').eq('account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
       ]);
       setTrades((t.data || []) as Trade[]);
       setInsights((i.data || []) as AiInsight[]);
@@ -69,7 +77,7 @@ function AppContent() {
       setLoadError(true);
       setLoading(false);
     }
-  }, []);
+  }, [activeAccount?.id, user?.id]);
 
   useEffect(() => { if (user) load(); }, [user, load]);
 
@@ -121,8 +129,7 @@ function AppContent() {
   };
 
   return (
-    <WorkspaceProvider>
-      <div className="flex min-h-screen">
+    <div className="flex min-h-screen">
         <Sidebar active={active} onSelect={handleSelect} onShowPlans={() => {}} onSignOut={signOut} profile={profile} tier={tier} />
         <div className="flex-1 flex flex-col min-w-0">
           <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('ai_intelligence')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => emit('journal:add-trade', undefined, 'page') : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
@@ -142,7 +149,6 @@ function AppContent() {
         <MobileNav active={active} onSelect={handleSelect} />
         <CommandPalette open={showCommand} onClose={() => setShowCommand(false)} onNavigate={handleSelect} onNewTrade={() => handleSelect('journal')} onImportTrades={() => handleSelect('brokers')} onOpenChat={() => handleSelect('ai_intelligence')} />
       </div>
-    </WorkspaceProvider>
   );
 }
 
@@ -152,7 +158,9 @@ export default function App() {
       <ThemeProvider>
         <TimezoneProvider>
           <AuthProvider>
-            <AppContent />
+            <WorkspaceProvider>
+              <AppContent />
+            </WorkspaceProvider>
           </AuthProvider>
         </TimezoneProvider>
       </ThemeProvider>

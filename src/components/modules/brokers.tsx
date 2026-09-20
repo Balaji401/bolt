@@ -22,7 +22,7 @@ import { ImportWizard } from '@/components/brokers/import-wizard';
 const BROKERS = ['MT4', 'MT5', 'cTrader', 'DXtrade', 'MatchTrader', 'Binance', 'Bybit', 'OANDA', 'IBKR'];
 
 export function Brokers({ trades, onTradesUpdated }: { trades: Trade[]; onTradesUpdated: () => void }) {
-  const { accounts } = useWorkspace();
+  const { accounts, activeAccount } = useWorkspace();
   const [connections, setConnections] = useState<BrokerConnection[]>([]);
   const [positions, setPositions] = useState<OpenPosition[]>([]);
   const [importJobs, setImportJobs] = useState<ImportJob[]>([]);
@@ -38,9 +38,9 @@ export function Brokers({ trades, onTradesUpdated }: { trades: Trade[]; onTrades
     setError(null);
     try {
       const [c, p, j] = await Promise.all([
-        supabase.from('broker_connections').select('*').order('created_at', { ascending: false }),
-        supabase.from('open_positions').select('*').order('opened_at', { ascending: false }),
-        supabase.from('import_jobs').select('*').order('created_at', { ascending: false }).limit(20),
+        supabase.from('broker_connections').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
+        supabase.from('open_positions').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('opened_at', { ascending: false }),
+        supabase.from('import_jobs').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }).limit(20),
       ]);
       setConnections((c.data || []) as BrokerConnection[]);
       setPositions((p.data || []) as OpenPosition[]);
@@ -51,7 +51,7 @@ export function Brokers({ trades, onTradesUpdated }: { trades: Trade[]; onTrades
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeAccount?.id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -61,7 +61,9 @@ export function Brokers({ trades, onTradesUpdated }: { trades: Trade[]; onTrades
   }, [load, onTradesUpdated]);
 
   const addConnection = async () => {
+    if (!activeAccount) return;
     const { error: insErr } = await supabase.from('broker_connections').insert({
+      user_id: activeAccount.user_id, workspace_id: activeAccount.workspace_id, trading_account_id: activeAccount.id,
       broker_name: form.broker_name, account_id: form.account_id || null, account_type: form.account_type as string,
       login: form.login || null, server: form.server || null,
       status: 'disconnected', auto_sync: true, balance: 0, equity: 0,
@@ -74,16 +76,16 @@ export function Brokers({ trades, onTradesUpdated }: { trades: Trade[]; onTrades
   };
 
   const removeConnection = async (c: BrokerConnection) => {
-    await supabase.from('broker_connections').delete().eq('id', c.id);
+    await supabase.from('broker_connections').delete().eq('id', c.id).eq('trading_account_id', activeAccount?.id || '__no_active_account__');
     emit('account:disconnected', { id: c.id }, 'brokers');
     setConnections((prev) => prev.filter((x) => x.id !== c.id));
   };
 
   const syncConnection = async (c: BrokerConnection) => {
-    await supabase.from('broker_connections').update({ status: 'syncing' }).eq('id', c.id);
+    await supabase.from('broker_connections').update({ status: 'syncing' }).eq('id', c.id).eq('trading_account_id', activeAccount?.id || '__no_active_account__');
     setConnections((prev) => prev.map((x) => x.id === c.id ? { ...x, status: 'syncing' } : x));
     setTimeout(async () => {
-      await supabase.from('broker_connections').update({ status: 'connected', last_sync_at: new Date().toISOString() }).eq('id', c.id);
+      await supabase.from('broker_connections').update({ status: 'connected', last_sync_at: new Date().toISOString() }).eq('id', c.id).eq('trading_account_id', activeAccount?.id || '__no_active_account__');
       setConnections((prev) => prev.map((x) => x.id === c.id ? { ...x, status: 'connected', last_sync_at: new Date().toISOString() } : x));
       emit('account:synced', { brokerId: c.id, count: 0 }, 'brokers');
     }, 2000);

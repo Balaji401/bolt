@@ -79,12 +79,12 @@ export function AiIntelligence({ trades }: { trades: Trade[] }) {
     try {
       const [stratRes, psychRes, goalRes, habitRes, mistakeRes, riskRes, memRes, recRes] = await Promise.all([
         supabase.from('strategies').select('*').eq('workspace_id', workspace.id),
-        supabase.from('psychology_logs').select('*').order('log_date', { ascending: false }).limit(30),
-        supabase.from('trading_goals').select('*').order('created_at', { ascending: false }),
+        supabase.from('psychology_logs').select('*').eq('user_id', activeAccount?.user_id || '__no_user__').eq('workspace_id', workspace.id).order('log_date', { ascending: false }).limit(30),
+        supabase.from('trading_goals').select('*').eq('user_id', activeAccount?.user_id || '__no_user__').eq('account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
         supabase.from('habits').select('*').eq('workspace_id', workspace.id),
         supabase.from('mistakes').select('*').eq('workspace_id', workspace.id),
         supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).maybeSingle(),
-        supabase.from('ai_memory').select('*').order('created_at', { ascending: false }),
+        supabase.from('ai_memory').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
         supabase.from('ai_recommendations').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
       ]);
       setStrategies((stratRes.data || []) as Strategy[]);
@@ -99,7 +99,7 @@ export function AiIntelligence({ trades }: { trades: Trade[] }) {
     } catch {
       setError(true); setLoading(false);
     }
-  }, [workspace]);
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { load(); }, [load]);
 
