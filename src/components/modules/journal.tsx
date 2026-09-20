@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useWorkspace } from '@/components/workspace-provider';
 import { Plus, Search, TrendingUp, TrendingDown, Trash2, Edit3, Filter, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Eye, Copy, Archive, X, ArrowUpDown } from 'lucide-react';
 import type { Trade } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
@@ -29,6 +30,7 @@ type SortKey = 'executed_at' | 'instrument' | 'direction' | 'entry_price' | 'pnl
 type SortDir = 'asc' | 'desc';
 
 export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () => void }) {
+  const { activeAccount } = useWorkspace();
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -110,7 +112,7 @@ export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () 
 
   const handleDelete = async () => {
     if (!deleting) return;
-    const { error } = await supabase.from('trades').delete().eq('id', deleting.id);
+    const { error } = await supabase.from('trades').delete().eq('id', deleting.id).eq('account_id', activeAccount?.id || '__no_active_account__');
     if (error) { logger.error('Journal', 'Delete failed', { error: error.message }); return; }
     emit('trade:deleted', { id: deleting.id }, 'journal');
     setDeleting(null); onMutated();
@@ -118,7 +120,7 @@ export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () 
 
   const handleArchive = async () => {
     if (!archiving) return;
-    const { error } = await supabase.from('trades').update({ archived: true }).eq('id', archiving.id);
+    const { error } = await supabase.from('trades').update({ archived: true }).eq('id', archiving.id).eq('account_id', activeAccount?.id || '__no_active_account__');
     if (error) { logger.error('Journal', 'Archive failed', { error: error.message }); return; }
     emit('trade:archived', { id: archiving.id }, 'journal');
     setArchiving(null); onMutated();
@@ -126,7 +128,8 @@ export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () 
 
   const handleDuplicate = async (trade: Trade) => {
     const { id, created_at, ...rest } = trade;
-    const { error } = await supabase.from('trades').insert({ ...rest, instrument: `${trade.instrument} (copy)`, pnl: 0, status: 'pending', executed_at: new Date().toISOString(), closed_at: null });
+    if (!activeAccount) return;
+    const { error } = await supabase.from('trades').insert({ ...rest, user_id: activeAccount.user_id, workspace_id: activeAccount.workspace_id, account_id: activeAccount.id, instrument: `${trade.instrument} (copy)`, pnl: 0, status: 'pending', executed_at: new Date().toISOString(), closed_at: null });
     if (error) { logger.error('Journal', 'Duplicate failed', { error: error.message }); return; }
     emit('trade:created', { id: 'duplicate' }, 'journal');
     onMutated();
