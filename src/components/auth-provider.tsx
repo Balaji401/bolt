@@ -77,22 +77,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     const { data: authSub } = supabase.auth.onAuthStateChange((event, newSession) => {
-      (async () => {
-        try {
-          setSession(newSession);
-          setUser(newSession?.user || null);
-          if (newSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-            await loadProfile(newSession.user);
-          } else if (event === 'SIGNED_OUT') {
-            setProfile(null);
-            setSubscription(null);
-          }
-        } catch (err) {
-          console.error('onAuthStateChange error:', err);
-        } finally {
-          setLoading(false);
+      // Keep this callback synchronous. Supabase can deadlock if another
+      // Supabase API call is awaited from inside onAuthStateChange.
+      setSession(newSession);
+      setUser(newSession?.user || null);
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (newSession?.user) {
+          // Defer profile/workspace hydration until after the auth event finishes.
+          setTimeout(() => {
+            void loadProfile(newSession.user).catch((err) => {
+              console.error('Deferred profile load error:', err);
+            });
+          }, 0);
         }
-      })();
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setSubscription(null);
+      }
+
+      setLoading(false);
     });
 
     return () => authSub.subscription.unsubscribe();
