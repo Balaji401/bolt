@@ -79,7 +79,7 @@ export function AiIntelligence({ trades }: { trades: Trade[] }) {
     try {
       const [stratRes, psychRes, goalRes, habitRes, mistakeRes, riskRes, memRes, recRes] = await Promise.all([
         supabase.from('strategies').select('*').eq('workspace_id', workspace.id),
-        supabase.from('psychology_logs').select('*').eq('user_id', activeAccount?.user_id || '__no_user__').eq('workspace_id', workspace.id).order('log_date', { ascending: false }).limit(30),
+        supabase.from('psychology_logs').select('*').eq('user_id', activeAccount?.user_id || '__no_user__').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').order('log_date', { ascending: false }).limit(30),
         supabase.from('trading_goals').select('*').eq('user_id', activeAccount?.user_id || '__no_user__').eq('account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
         supabase.from('habits').select('*').eq('workspace_id', workspace.id),
         supabase.from('mistakes').select('*').eq('workspace_id', workspace.id),
