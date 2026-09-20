@@ -40,3 +40,17 @@ UPDATE monthly_reviews m SET account_id = (
   WHERE ta.workspace_id = m.workspace_id AND ta.status = 'active'
   ORDER BY ta.is_default DESC, ta.created_at ASC LIMIT 1
 ) WHERE m.account_id IS NULL;
+
+-- Replace legacy workspace-independent uniqueness with account-aware uniqueness.
+DROP INDEX IF EXISTS daily_journals_user_date_unique;
+DROP INDEX IF EXISTS weekly_reviews_user_week_unique;
+DROP INDEX IF EXISTS monthly_reviews_user_month_unique;
+CREATE UNIQUE INDEX IF NOT EXISTS daily_journals_user_account_date_unique
+  ON daily_journals (user_id, account_id, journal_date)
+  WHERE account_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS weekly_reviews_user_account_week_unique
+  ON weekly_reviews (user_id, account_id, week_start)
+  WHERE account_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS monthly_reviews_user_account_month_unique
+  ON monthly_reviews (user_id, account_id, month_year)
+  WHERE account_id IS NOT NULL;
