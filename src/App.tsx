@@ -44,6 +44,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showCommand, setShowCommand] = useState(false);
+  const { activeAccount } = useWorkspace();
 
   const handleSelect = useCallback((key: ModuleKey) => {
     setActive(key);
@@ -55,7 +56,12 @@ function AppContent() {
     setLoadError(false);
     try {
       const [t, i, p, g] = await Promise.all([
-        supabase.from('trades').select('*').order('executed_at', { ascending: false }),
+        (() => {
+          let query = supabase.from('trades').select('*').order('executed_at', { ascending: false });
+          if (activeAccount?.id) query = query.eq('account_id', activeAccount.id);
+          else query = query.eq('account_id', '__no_active_account__');
+          return query;
+        })(),
         supabase.from('ai_insights').select('*').order('created_at', { ascending: false }),
         supabase.from('open_positions').select('*').order('opened_at', { ascending: false }),
         supabase.from('trading_goals').select('*').order('created_at', { ascending: false }),
@@ -69,7 +75,7 @@ function AppContent() {
       setLoadError(true);
       setLoading(false);
     }
-  }, []);
+  }, [activeAccount?.id]);
 
   useEffect(() => { if (user) load(); }, [user, load]);
 
