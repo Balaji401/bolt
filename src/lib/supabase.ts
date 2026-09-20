@@ -14,6 +14,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 export type Trade = {
   id: string;
+  user_id: string | null;
+  workspace_id: string | null;
+  account_id: string | null;
   instrument: string;
   direction: 'long' | 'short';
   entry_price: number;
