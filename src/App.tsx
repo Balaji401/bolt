@@ -1,4 +1,6 @@
 'use client';
+
+// Workspace context is required by AppContent for account-scoped data loading.
 import { useCallback, useEffect, useState } from 'react';
 import { Sidebar, MobileNav, type ModuleKey } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
