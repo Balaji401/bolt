@@ -80,7 +80,7 @@ export function Reports({ trades }: { trades: Trade[] }) {
         supabase.from('trading_goals').select('*').order('created_at', { ascending: false }),
         supabase.from('habits').select('*').eq('workspace_id', workspace.id),
         supabase.from('mistakes').select('*').eq('workspace_id', workspace.id),
-        supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).maybeSingle(),
+        supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').maybeSingle(),
         supabase.from('daily_journals').select('*').order('journal_date', { ascending: false }).limit(30),
         supabase.from('report_templates').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
         supabase.from('report_history').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }).limit(20),
@@ -100,7 +100,7 @@ export function Reports({ trades }: { trades: Trade[] }) {
     } catch {
       setError(true); setLoading(false);
     }
-  }, [workspace]);
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { load(); }, [load]);
 
