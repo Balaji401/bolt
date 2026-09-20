@@ -28,7 +28,7 @@ export function MonthlyReviewEditor({ trades }: { trades: Trade[] }) {
 
   const load = useCallback(async () => {
     if (!workspace || !activeAccount) return;
-    const { data } = await supabase.from('monthly_reviews').select('*').eq('workspace_id', workspace.id).order('month_year', { ascending: false }).limit(12);
+    const { data } = await supabase.from('monthly_reviews').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount.id).order('month_year', { ascending: false }).limit(12);
     setReviews((data || []) as MonthlyReview[]);
     setLoading(false);
   }, [workspace, activeAccount?.id]);
@@ -63,7 +63,7 @@ export function MonthlyReviewEditor({ trades }: { trades: Trade[] }) {
     setSaving(true);
     const payload = { ...form, workspace_id: workspace.id, user_id: workspace.user_id, account_id: activeAccount.id };
     if (editingId) {
-      await supabase.from('monthly_reviews').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingId);
+      await supabase.from('monthly_reviews').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingId).eq('account_id', activeAccount.id);
     } else {
       const { data } = await supabase.from('monthly_reviews').insert(payload).select().maybeSingle();
       if (data) setEditingId(data.id);
