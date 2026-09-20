@@ -62,7 +62,7 @@ function AppContent() {
           else query = query.eq('account_id', '__no_active_account__');
           return query;
         })(),
-        supabase.from('ai_insights').select('*').eq('user_id', user?.id || '__no_user__').order('created_at', { ascending: false }),
+        supabase.from('ai_insights').select('*').eq('user_id', user?.id || '__no_user__').eq('account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
         supabase.from('open_positions').select('*').eq('trading_account_id', activeAccount?.id || '__no_active_account__').order('opened_at', { ascending: false }),
         supabase.from('trading_goals').select('*').eq('user_id', user?.id || '__no_user__').eq('account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
       ]);
