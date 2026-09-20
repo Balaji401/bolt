@@ -83,7 +83,7 @@ export function AiIntelligence({ trades }: { trades: Trade[] }) {
         supabase.from('trading_goals').select('*').eq('user_id', activeAccount?.user_id || '__no_user__').eq('account_id', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
         supabase.from('habits').select('*').eq('workspace_id', workspace.id),
         supabase.from('mistakes').select('*').eq('workspace_id', workspace.id),
-        supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).maybeSingle(),
+        supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').maybeSingle(),
         supabase.from('ai_memory').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
         supabase.from('ai_recommendations').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
       ]);
