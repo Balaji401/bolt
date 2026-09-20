@@ -75,7 +75,7 @@ function AppContent() {
       setLoadError(true);
       setLoading(false);
     }
-  }, [activeAccount?.id]);
+  }, [activeAccount?.id, user?.id]);
 
   useEffect(() => { if (user) load(); }, [user, load]);
 
