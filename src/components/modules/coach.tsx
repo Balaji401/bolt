@@ -11,17 +11,20 @@ import { EmptyState } from '@/components/feedback/state';
 import { cn } from '@/lib/utils';
 import { emit } from '@/lib/event-bus';
 import { logger } from '@/lib/logger';
+import { useWorkspace } from '@/components/workspace-provider';
 
 export function Coach({ trades, insights, onRegenerated }: { trades: Trade[]; insights: AiInsight[]; onRegenerated: () => void }) {
   const [generating, setGenerating] = useState(false);
+  const { activeAccount } = useWorkspace();
   const metrics = computeMetrics(trades);
 
   const generateInsights = async () => {
+    if (!activeAccount) return;
     setGenerating(true);
     try {
       const generated = generateLocalInsights(metrics, trades);
       for (const insight of generated) {
-        await supabase.from('ai_insights').insert(insight);
+        await supabase.from('ai_insights').insert({ ...insight, user_id: activeAccount.user_id, workspace_id: activeAccount.workspace_id, account_id: activeAccount.id });
       }
       emit('insight:generated', { count: generated.length }, 'coach');
       onRegenerated();
