@@ -102,6 +102,7 @@ export type CsvMappingTemplate = {
 
 export type AiInsight = {
   id: string;
+  account_id: string | null;
   insight_type: 'warning' | 'strength' | 'suggestion' | 'observation' | 'summary';
   title: string;
   body: string;
