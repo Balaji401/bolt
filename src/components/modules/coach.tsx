@@ -70,8 +70,8 @@ export function Coach({ trades, insights, onRegenerated }: { trades: Trade[]; in
   );
 }
 
-function generateLocalInsights(metrics: ReturnType<typeof computeMetrics>, trades: Trade[]): Omit<AiInsight, 'id' | 'created_at'>[] {
-  const insights: Omit<AiInsight, 'id' | 'created_at'>[] = [];
+function generateLocalInsights(metrics: ReturnType<typeof computeMetrics>, trades: Trade[]): Omit<AiInsight, 'id' | 'created_at' | 'user_id' | 'workspace_id' | 'account_id'>[] {
+  const insights: Omit<AiInsight, 'id' | 'created_at' | 'user_id' | 'workspace_id' | 'account_id'>[] = [];
   if (metrics.winRate < 40) insights.push({ insight_type: 'warning', title: 'Low Win Rate', body: `Your win rate is ${metrics.winRate.toFixed(1)}%. Consider tightening your entry criteria or waiting for higher-quality setups.`, severity: 'warning', metric_ref: 'win_rate' });
   if (metrics.winRate >= 60) insights.push({ insight_type: 'strength', title: 'Strong Win Rate', body: `Your win rate of ${metrics.winRate.toFixed(1)}% is above average. Keep doing what you're doing.`, severity: 'success', metric_ref: 'win_rate' });
   if (metrics.profitFactor < 1) insights.push({ insight_type: 'warning', title: 'Negative Profit Factor', body: `Your profit factor is ${metrics.profitFactor.toFixed(2)}. Your losses exceed your wins. Review your risk management.`, severity: 'critical', metric_ref: 'profit_factor' });
