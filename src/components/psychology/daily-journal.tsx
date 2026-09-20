@@ -31,7 +31,7 @@ export function DailyJournal() {
 
   const load = useCallback(async () => {
     if (!workspace || !activeAccount) return;
-    const { data } = await supabase.from('daily_journals').select('*').eq('workspace_id', workspace.id).order('journal_date', { ascending: false }).limit(30);
+    const { data } = await supabase.from('daily_journals').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount.id).order('journal_date', { ascending: false }).limit(30);
     setJournals((data || []) as DailyJournal[]);
     setLoading(false);
   }, [workspace, activeAccount?.id]);
@@ -51,7 +51,7 @@ export function DailyJournal() {
       account_id: activeAccount.id,
     };
     if (editingId) {
-      await supabase.from('daily_journals').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingId);
+      await supabase.from('daily_journals').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingId).eq('account_id', activeAccount.id);
     } else {
       const { data } = await supabase.from('daily_journals').insert(payload).select().maybeSingle();
       if (data) setEditingId(data.id);
