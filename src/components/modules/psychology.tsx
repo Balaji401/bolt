@@ -50,7 +50,7 @@ export function Psychology({ trades }: { trades: Trade[] }) {
   const load = useCallback(async () => {
     setError(false);
     if (!activeAccount) { setPsychLogs([]); setLoading(false); return; }
-    const { data, error } = await supabase.from('psychology_logs').select('*').eq('user_id', activeAccount.user_id).eq('workspace_id', activeAccount.workspace_id).order('log_date', { ascending: false }).limit(30);
+    const { data, error } = await supabase.from('psychology_logs').select('*').eq('user_id', activeAccount.user_id).eq('workspace_id', activeAccount.workspace_id).eq('account_id', activeAccount.id).order('log_date', { ascending: false }).limit(30);
     if (error) { setError(true); setLoading(false); return; }
     setPsychLogs((data || []) as PsychologyLog[]);
     setLoading(false);
