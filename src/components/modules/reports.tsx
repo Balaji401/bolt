@@ -76,12 +76,12 @@ export function Reports({ trades }: { trades: Trade[] }) {
     try {
       const [stratRes, psychRes, goalRes, habitRes, mistakeRes, riskRes, journalRes, tmplRes, histRes, schedRes] = await Promise.all([
         supabase.from('strategies').select('*').eq('workspace_id', workspace.id),
-        supabase.from('psychology_logs').select('*').order('log_date', { ascending: false }).limit(60),
+        supabase.from('psychology_logs').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').order('log_date', { ascending: false }).limit(60),
         supabase.from('trading_goals').select('*').order('created_at', { ascending: false }),
         supabase.from('habits').select('*').eq('workspace_id', workspace.id),
         supabase.from('mistakes').select('*').eq('workspace_id', workspace.id),
         supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').maybeSingle(),
-        supabase.from('daily_journals').select('*').order('journal_date', { ascending: false }).limit(30),
+        supabase.from('daily_journals').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').order('journal_date', { ascending: false }).limit(30),
         supabase.from('report_templates').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
         supabase.from('report_history').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }).limit(20),
         supabase.from('scheduled_reports').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
