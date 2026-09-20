@@ -281,6 +281,7 @@ export type RiskRules = {
   id: string;
   user_id: string;
   workspace_id: string;
+  account_id: string | null;
   max_daily_loss_pct: number;
   max_weekly_loss_pct: number;
   max_monthly_loss_pct: number;
@@ -299,6 +300,7 @@ export type RiskAlert = {
   id: string;
   user_id: string;
   workspace_id: string;
+  account_id: string | null;
   alert_type: string;
   severity: 'info' | 'warning' | 'critical';
   title: string;
