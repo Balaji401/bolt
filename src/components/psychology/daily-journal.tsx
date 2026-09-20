@@ -21,7 +21,7 @@ const EMPTY_FORM = {
 };
 
 export function DailyJournal() {
-  const { workspace } = useWorkspace();
+  const { workspace, activeAccount } = useWorkspace();
   const [journals, setJournals] = useState<DailyJournal[]>([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,11 +30,11 @@ export function DailyJournal() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!workspace) return;
+    if (!workspace || !activeAccount) return;
     const { data } = await supabase.from('daily_journals').select('*').eq('workspace_id', workspace.id).order('journal_date', { ascending: false }).limit(30);
     setJournals((data || []) as DailyJournal[]);
     setLoading(false);
-  }, [workspace]);
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -48,6 +48,7 @@ export function DailyJournal() {
       followed_plan: form.followed_plan === 'null' ? null : form.followed_plan === 'true',
       workspace_id: workspace.id,
       user_id: workspace.user_id,
+      account_id: activeAccount.id,
     };
     if (editingId) {
       await supabase.from('daily_journals').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingId);
