@@ -61,7 +61,7 @@ export function Reports({ trades }: { trades: Trade[] }) {
 
   const [selectedType, setSelectedType] = useState<ReportType>('performance');
   const [filters, setFilters] = useState<ReportFilters>({
-    dateFrom: null, dateTo: null, accountId: null, instrument: null,
+    dateFrom: null, dateTo: null, accountId: activeAccount?.id || null, instrument: null,
     strategy: null, session: null, timeframe: null, direction: null,
     setupType: null, tags: [],
   });
@@ -83,8 +83,8 @@ export function Reports({ trades }: { trades: Trade[] }) {
         supabase.from('risk_rules').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').maybeSingle(),
         supabase.from('daily_journals').select('*').eq('workspace_id', workspace.id).eq('account_id', activeAccount?.id || '__no_active_account__').order('journal_date', { ascending: false }).limit(30),
         supabase.from('report_templates').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
-        supabase.from('report_history').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }).limit(20),
-        supabase.from('scheduled_reports').select('*').eq('workspace_id', workspace.id).order('created_at', { ascending: false }),
+        supabase.from('report_history').select('*').eq('workspace_id', workspace.id).eq('account_id_uuid', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }).limit(20),
+        supabase.from('scheduled_reports').select('*').eq('workspace_id', workspace.id).eq('account_id_uuid', activeAccount?.id || '__no_active_account__').order('created_at', { ascending: false }),
       ]);
       setStrategies((stratRes.data || []) as Strategy[]);
       setPsychologyLogs((psychRes.data || []) as PsychologyLog[]);
@@ -140,7 +140,7 @@ export function Reports({ trades }: { trades: Trade[] }) {
         report_type: selectedType,
         period_start: filters.dateFrom,
         period_end: filters.dateTo,
-        account_id: filters.accountId,
+        account_id: filters.accountId,\n        account_id_uuid: filters.accountId,
         status: 'generated',
         filters: filters as unknown as Record<string, unknown>,
         sections: sections.filter((s) => s.enabled).map((s) => s.id),
@@ -171,7 +171,7 @@ export function Reports({ trades }: { trades: Trade[] }) {
   };
 
   const handleDeleteHistory = async (id: string) => {
-    await supabase.from('report_history').delete().eq('id', id);
+    await supabase.from('report_history').delete().eq('id', id).eq('account_id_uuid', activeAccount?.id || '__no_active_account__');
     setHistory((prev) => prev.filter((h) => h.id !== id));
   };
 
@@ -185,7 +185,7 @@ export function Reports({ trades }: { trades: Trade[] }) {
       report_type: item.report_type,
       period_start: item.period_start,
       period_end: item.period_end,
-      account_id: item.account_id,
+      account_id: item.account_id,\n      account_id_uuid: activeAccount?.id || null,
       status: 'generated',
       filters: item.filters,
       sections: item.sections,
@@ -218,12 +218,12 @@ export function Reports({ trades }: { trades: Trade[] }) {
   };
 
   const handleToggleScheduled = async (id: string, active: boolean) => {
-    await supabase.from('scheduled_reports').update({ active }).eq('id', id);
+    await supabase.from('scheduled_reports').update({ active }).eq('id', id).eq('account_id_uuid', activeAccount?.id || '__no_active_account__');
     setScheduled((prev) => prev.map((s) => s.id === id ? { ...s, active } : s));
   };
 
   const handleDeleteScheduled = async (id: string) => {
-    await supabase.from('scheduled_reports').delete().eq('id', id);
+    await supabase.from('scheduled_reports').delete().eq('id', id).eq('account_id_uuid', activeAccount?.id || '__no_active_account__');
     setScheduled((prev) => prev.filter((s) => s.id !== id));
   };
 
@@ -242,7 +242,7 @@ export function Reports({ trades }: { trades: Trade[] }) {
       template_id: templateId,
       name: `${template.name} — ${frequency}`,
       frequency,
-      delivery_preference: 'view',
+      delivery_preference: 'view',\n      account_id_uuid: activeAccount?.id || null,
       active: true,
       next_generation_at: next.toISOString(),
     });
