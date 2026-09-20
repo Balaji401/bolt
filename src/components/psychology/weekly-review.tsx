@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
 
 export function WeeklyReviewEditor({ trades }: { trades: Trade[] }) {
-  const { workspace } = useWorkspace();
+  const { workspace, activeAccount } = useWorkspace();
   const [reviews, setReviews] = useState<WeeklyReview[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -28,11 +28,11 @@ export function WeeklyReviewEditor({ trades }: { trades: Trade[] }) {
   });
 
   const load = useCallback(async () => {
-    if (!workspace) return;
+    if (!workspace || !activeAccount) return;
     const { data } = await supabase.from('weekly_reviews').select('*').eq('workspace_id', workspace.id).order('week_start', { ascending: false }).limit(12);
     setReviews((data || []) as WeeklyReview[]);
     setLoading(false);
-  }, [workspace]);
+  }, [workspace, activeAccount?.id]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -61,7 +61,7 @@ export function WeeklyReviewEditor({ trades }: { trades: Trade[] }) {
   const save = async () => {
     if (!workspace) return;
     setSaving(true);
-    const payload = { ...form, workspace_id: workspace.id, user_id: workspace.user_id };
+    const payload = { ...form, workspace_id: workspace.id, user_id: workspace.user_id, account_id: activeAccount.id };
     if (editingId) {
       await supabase.from('weekly_reviews').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editingId);
     } else {
