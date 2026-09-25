@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/traderos_agent/__init__.py
+src/traderos_agent/__main__.py
+src/traderos_agent/agent.py
+src/traderos_agent.egg-info/PKG-INFO
+src/traderos_agent.egg-info/SOURCES.txt
+src/traderos_agent.egg-info/dependency_links.txt
+src/traderos_agent.egg-info/top_level.txt
+tests/test_agent.py
