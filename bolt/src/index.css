@@ -4,66 +4,66 @@
 
 @layer base {
   :root {
-    --background: 210 30% 98%;
-    --foreground: 222 22% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 22% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 22% 10%;
-    --primary: 199 89% 42%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 222 22% 10%;
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 16% 45%;
-    --accent: 199 89% 42%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 50%;
+    --background: 208 43% 9%;
+    --foreground: 210 20% 96%;
+    --card: 210 31% 12%;
+    --card-foreground: 210 20% 96%;
+    --popover: 210 31% 12%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 173 68% 52%;
+    --primary-foreground: 205 31% 8%;
+    --secondary: 208 25% 16%;
+    --secondary-foreground: 210 20% 96%;
+    --muted: 210 19% 15%;
+    --muted-foreground: 210 15% 62%;
+    --accent: 201 95% 63%;
+    --accent-foreground: 205 31% 8%;
+    --destructive: 0 75% 66%;
     --destructive-foreground: 0 0% 100%;
-    --success: 152 65% 38%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 45%;
-    --warning-foreground: 0 0% 100%;
-    --border: 210 20% 85%;
-    --input: 210 20% 85%;
-    --ring: 199 89% 42%;
-    --radius: 0.75rem;
-    --chart-1: 199 89% 42%;
-    --chart-2: 152 65% 38%;
-    --chart-3: 38 92% 45%;
-    --chart-4: 280 65% 55%;
-    --chart-5: 0 72% 50%;
+    --success: 150 61% 48%;
+    --success-foreground: 205 31% 8%;
+    --warning: 39 95% 58%;
+    --warning-foreground: 205 31% 8%;
+    --border: 210 22% 18%;
+    --input: 210 22% 18%;
+    --ring: 173 68% 52%;
+    --radius: 0.9rem;
+    --chart-1: 173 68% 52%;
+    --chart-2: 201 95% 63%;
+    --chart-3: 150 61% 48%;
+    --chart-4: 39 95% 58%;
+    --chart-5: 0 75% 66%;
   }
 
   .dark {
-    --background: 222 22% 7%;
+    --background: 208 43% 9%;
     --foreground: 210 20% 96%;
-    --card: 222 18% 10%;
+    --card: 210 31% 12%;
     --card-foreground: 210 20% 96%;
-    --popover: 222 18% 10%;
+    --popover: 210 31% 12%;
     --popover-foreground: 210 20% 96%;
-    --primary: 199 89% 56%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 222 16% 14%;
+    --primary: 173 68% 52%;
+    --primary-foreground: 205 31% 8%;
+    --secondary: 208 25% 16%;
     --secondary-foreground: 210 20% 96%;
-    --muted: 222 16% 14%;
-    --muted-foreground: 215 16% 65%;
-    --accent: 199 89% 56%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 56%;
+    --muted: 210 19% 15%;
+    --muted-foreground: 210 15% 62%;
+    --accent: 201 95% 63%;
+    --accent-foreground: 205 31% 8%;
+    --destructive: 0 75% 66%;
     --destructive-foreground: 0 0% 100%;
-    --success: 152 65% 48%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 0 0% 100%;
-    --border: 222 14% 18%;
-    --input: 222 14% 18%;
-    --ring: 199 89% 56%;
-    --chart-1: 199 89% 56%;
-    --chart-2: 152 65% 48%;
-    --chart-3: 38 92% 55%;
-    --chart-4: 280 65% 65%;
-    --chart-5: 0 72% 56%;
+    --success: 150 61% 48%;
+    --success-foreground: 205 31% 8%;
+    --warning: 39 95% 58%;
+    --warning-foreground: 205 31% 8%;
+    --border: 210 22% 18%;
+    --input: 210 22% 18%;
+    --ring: 173 68% 52%;
+    --chart-1: 173 68% 52%;
+    --chart-2: 201 95% 63%;
+    --chart-3: 150 61% 48%;
+    --chart-4: 39 95% 58%;
+    --chart-5: 0 75% 66%;
   }
 }
 
@@ -72,22 +72,194 @@
     @apply border-border;
   }
 
-  html { color-scheme: light; }
+  html { color-scheme: dark; }
   html.dark { color-scheme: dark; }
 
   body {
     @apply bg-background text-foreground;
+    background:
+      radial-gradient(circle at top left, rgba(53, 208, 186, 0.12), transparent 22%),
+      radial-gradient(circle at top right, rgba(79, 195, 247, 0.10), transparent 18%),
+      linear-gradient(180deg, #07111C 0%, #0B1724 100%);
+    background-attachment: fixed;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     -webkit-font-smoothing: antialiased;
   }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  .trading-hero-shell {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .trading-hero-backdrop {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(76, 201, 240, 0.12), transparent 24%),
+      radial-gradient(circle at 78% 12%, rgba(53, 208, 186, 0.10), transparent 28%),
+      linear-gradient(180deg, rgba(8, 15, 24, 0.82) 0%, rgba(6, 12, 18, 0.98) 100%);
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: -10% -8% 20% -8%;
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(circle at center, black 30%, transparent 100%);
+    opacity: 0.42;
+    animation: driftGrid 18s linear infinite alternate;
+  }
+
+  .hero-price-line {
+    position: absolute;
+    height: 1px;
+    left: 8%;
+    right: 8%;
+    border-radius: 999px;
+    opacity: 0.22;
+    background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.85) 18%, rgba(52, 211, 153, 0.9) 52%, rgba(56, 189, 248, 0.7) 85%, transparent 100%);
+    filter: blur(0.4px);
+    animation: priceDrift 18s ease-in-out infinite alternate;
+  }
+
+  .hero-price-line-one {
+    top: 22%;
+    transform: rotate(-6deg) scaleX(0.9);
+  }
+
+  .hero-price-line-two {
+    top: 48%;
+    transform: rotate(8deg) scaleX(1.08);
+    animation-duration: 22s;
+  }
+
+  .hero-candles {
+    position: absolute;
+    inset: 8% 0 10% 0;
+    opacity: 0.12;
+    animation: candleFloat 20s ease-in-out infinite alternate;
+  }
+
+  .hero-candles .candle {
+    position: absolute;
+    bottom: 12%;
+    width: 8px;
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(180deg, rgba(52, 211, 153, 0.75), rgba(52, 211, 153, 0.15));
+    box-shadow: 0 0 10px rgba(52, 211, 153, 0.1);
+    height: clamp(26px, 8vw, 120px);
+    transform-origin: bottom center;
+    animation: candlePulse 9s ease-in-out infinite;
+  }
+
+  .hero-candles .candle:nth-child(odd) {
+    background: linear-gradient(180deg, rgba(96, 165, 250, 0.7), rgba(96, 165, 250, 0.15));
+  }
+
+  .floating-market-tags {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .floating-market-tag {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    background: rgba(15, 23, 42, 0.22);
+    backdrop-filter: blur(4px);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    animation: tagFloat 15s ease-in-out infinite alternate;
+  }
+
+  .floating-market-tag:nth-child(1) { top: 18%; left: 18%; }
+  .floating-market-tag:nth-child(2) { top: 28%; right: 14%; animation-delay: 1.2s; }
+  .floating-market-tag:nth-child(3) { bottom: 20%; left: 22%; animation-delay: 2.1s; }
+  .floating-market-tag:nth-child(4) { bottom: 18%; right: 20%; animation-delay: 0.8s; }
+
+  .market-ticker-wrap {
+    overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+  }
+
+  .market-ticker-track {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    gap: 0.7rem;
+    animation: tickerScroll 28s linear infinite;
+  }
+
+  .market-ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    background: rgba(15, 23, 42, 0.7);
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .ticker-symbol {
+    font-weight: 700;
+    color: #7dd3fc;
+  }
+
+  .ticker-value {
+    color: rgba(148, 163, 184, 0.85);
+  }
+
+  .reveal-card {
+    animation: heroReveal 0.7s ease-out both;
+  }
+
+  .reveal-card:nth-child(2) { animation-delay: 80ms; }
+  .reveal-card:nth-child(3) { animation-delay: 140ms; }
+  .reveal-card:nth-child(4) { animation-delay: 200ms; }
+  .reveal-card:nth-child(5) { animation-delay: 260ms; }
 }
 
 @layer components {
   .glass {
-    @apply bg-card/40 backdrop-blur-xl border border-border;
+    @apply bg-slate-900/70 backdrop-blur-xl border border-white/10 shadow-[0_12px_32px_rgba(2,6,23,0.35)];
   }
   .glass-strong {
-    @apply bg-card/70 backdrop-blur-2xl border border-border;
+    @apply bg-slate-950/80 backdrop-blur-2xl border border-white/10 shadow-[0_18px_42px_rgba(2,6,23,0.52)];
+  }
+
+  .panel-surface {
+    @apply rounded-xl border border-white/10 bg-[#0F1D2B]/90 shadow-[0_18px_35px_rgba(2,6,23,0.28)];
+  }
+
+  .trading-grid {
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .market-glow {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 0 0 1px rgba(53, 208, 186, 0.10), 0 18px 42px rgba(15, 23, 42, 0.38);
   }
 }
 
@@ -165,4 +337,51 @@
   0% { transform: scale(0.8); opacity: 0; }
   60% { transform: scale(1.05); }
   100% { transform: scale(1); opacity: 1; }
+}
+@keyframes driftGrid {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(0, 12px, 0) scale(1.04); }
+}
+@keyframes priceDrift {
+  0% { transform: translateX(-12px) scaleX(0.92); opacity: 0.12; }
+  50% { opacity: 0.2; }
+  100% { transform: translateX(12px) scaleX(1.06); opacity: 0.26; }
+}
+@keyframes candleFloat {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(18px); }
+}
+@keyframes candlePulse {
+  0%, 100% { transform: scaleY(0.92); opacity: 0.18; }
+  50% { transform: scaleY(1.08); opacity: 0.3; }
+}
+@keyframes tagFloat {
+  0% { transform: translateY(0) translateX(0); opacity: 0.42; }
+  100% { transform: translateY(-10px) translateX(8px); opacity: 0.72; }
+}
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes heroReveal {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-grid,
+  .hero-price-line,
+  .hero-candles,
+  .floating-market-tag,
+  .market-ticker-track,
+  .reveal-card {
+    animation: none !important;
+  }
+
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

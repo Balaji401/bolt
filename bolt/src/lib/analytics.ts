@@ -44,6 +44,10 @@ export type Metrics = {
   byMarket: Record<string, { trades: number; pnl: number; winRate: number }>;
   byAccount: Record<string, { trades: number; pnl: number; winRate: number }>;
   equity: { date: string; cumulative: number; pnl: number; balance: number }[];
+  drawdownSeries: { date: string; drawdown: number; equity: number }[];
+  maxDrawdown: number;
+  currentDrawdown: number;
+  rDistribution: { bucket: string; count: number; percent: number; avgR: number }[];
   dailyPnl: { date: string; pnl: number }[];
   weeklyPnl: { week: string; pnl: number }[];
   monthlyPnl: { month: string; pnl: number }[];
@@ -368,6 +372,43 @@ export function computeMetrics(trades: Trade[]): Metrics {
     ? closed.reduce((min, t) => Number(t.pnl) < Number(min.pnl) ? t : min, closed[0])
     : null;
 
+  const drawdownSeries: { date: string; drawdown: number; equity: number }[] = [];
+  let peakEquity = 0;
+  let maxDrawdown = 0;
+  for (const point of equity) {
+    const level = point.balance;
+    peakEquity = Math.max(peakEquity, level);
+    const drawdown = peakEquity > 0 ? ((level - peakEquity) / peakEquity) * 100 : 0;
+    drawdownSeries.push({ date: point.date, drawdown, equity: level });
+    maxDrawdown = Math.min(maxDrawdown, drawdown);
+  }
+  const currentDrawdown = drawdownSeries.length > 0 ? drawdownSeries[drawdownSeries.length - 1].drawdown : 0;
+
+  const rBuckets = [
+    { bucket: '< -2R', min: -Infinity, max: -2 },
+    { bucket: '-2R to -1R', min: -2, max: -1 },
+    { bucket: '-1R to 0R', min: -1, max: 0 },
+    { bucket: '0R to +1R', min: 0, max: 1 },
+    { bucket: '+1R to +2R', min: 1, max: 2 },
+    { bucket: '> +2R', min: 2, max: Infinity },
+  ];
+
+  const rDistribution = rBuckets.map((bucket) => {
+    const matches = closed.filter((t) => {
+      const rr = Number(t.rr || 0);
+      return rr >= bucket.min && rr < bucket.max;
+    });
+    const avgR = matches.length > 0
+      ? matches.reduce((sum, trade) => sum + Number(trade.rr || 0), 0) / matches.length
+      : 0;
+    return {
+      bucket: bucket.bucket,
+      count: matches.length,
+      percent: closed.length > 0 ? (matches.length / closed.length) * 100 : 0,
+      avgR,
+    };
+  });
+
   return {
     totalTrades: trades.length,
     winRate,
@@ -412,6 +453,10 @@ export function computeMetrics(trades: Trade[]): Metrics {
     byMarket,
     byAccount,
     equity,
+    drawdownSeries,
+    maxDrawdown,
+    currentDrawdown,
+    rDistribution,
     dailyPnl,
     weeklyPnl,
     monthlyPnl,

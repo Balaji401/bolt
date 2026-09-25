@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase, type Profile, type Subscription } from '@/lib/supabase';
+import { supabase, getSupabaseClientConfig, isSupabaseConfigured, type Profile, type Subscription } from '@/lib/supabase';
 
 type ProfileUpdate = Partial<Pick<Profile,
   'display_name' | 'full_name' | 'username' | 'avatar_url' |
@@ -16,6 +16,7 @@ type AuthState = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   signOutAllDevices: () => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -98,6 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [loadProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      return { error: 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your local .env file.' };
+    }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: friendlyAuthError(error) };
     if (data.user?.email) {
@@ -107,6 +111,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
+    if (!isSupabaseConfigured) {
+      return { error: 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your local .env file.' };
+    }
     const name = displayName || email.split('@')[0];
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
     if (error) return { error: friendlyAuthError(error) };
@@ -114,6 +121,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.from('email_signups').upsert({ email: data.user.email || email, display_name: name, user_id: data.user.id, source: 'signup_form', sheets_synced: false }, { onConflict: 'email', ignoreDuplicates: false });
       triggerSheetsSync(email, name);
     }
+    return { error: null };
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      return { error: 'Google sign-in is unavailable because Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your local .env file.' };
+    }
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: redirectTo ? { redirectTo } : undefined,
+    });
+    if (error) return { error: friendlyAuthError(error) };
     return { error: null };
   }, []);
 
@@ -176,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, profile, subscription, loading,
-      signIn, signUp, signOut, signOutAllDevices, resetPassword, changePassword, updateProfile, deleteAccount, refresh,
+      signIn, signUp, signInWithGoogle, signOut, signOutAllDevices, resetPassword, changePassword, updateProfile, deleteAccount, refresh,
     }}>
       {children}
     </AuthContext.Provider>
@@ -190,10 +210,12 @@ export function useAuth() {
 }
 
 function triggerSheetsSync(email: string, name: string) {
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-to-sheets`;
-  fetch(url, {
+  const { url, anonKey, isConfigured } = getSupabaseClientConfig();
+  if (!isConfigured) return;
+
+  fetch(`${url}/functions/v1/sync-to-sheets`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || '', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}` },
+    headers: { 'Content-Type': 'application/json', apikey: anonKey, Authorization: `Bearer ${anonKey}` },
     body: JSON.stringify({ email, name, timestamp: new Date().toISOString() }),
   }).catch(() => {});
 }

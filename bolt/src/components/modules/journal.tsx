@@ -141,29 +141,61 @@ export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () 
   }, []);
 
   return (
-    <div className="space-y-5">
-      {/* Summary Header */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Trades" value={stats.total.toString()} icon={TrendingUp} />
-        <StatCard label="Net P&L" value={formatCurrency(stats.netPnl)} accent={stats.netPnl >= 0 ? 'success' : 'destructive'} />
-        <StatCard label="Win Rate" value={`${stats.winRate.toFixed(1)}%`} sub={`${stats.wins}W / ${stats.losses}L / ${stats.breakeven}BE`} />
-        <StatCard label="Avg R:R" value={stats.avgRr.toFixed(2)} sub={`${stats.totalLots} lots total`} />
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} placeholder="Search instrument, notes, tags, ID..." className="pl-10" />
+    <div className="journal-shell space-y-5">
+      <div className="rounded-2xl border border-border bg-card/40 p-4 sm:p-5">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary/80">Trading journal</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">Review executions, decisions, and behavior.</h2>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-full border border-border bg-secondary/50 px-2.5 py-1">{stats.total} trades</span>
+            <span className="inline-flex items-center rounded-full border border-border bg-secondary/50 px-2.5 py-1">{stats.wins} wins</span>
+          </div>
         </div>
-        <Button variant="outline" onClick={() => setShowFilters(!showFilters)}><Filter className="w-4 h-4 mr-2" /> Filters</Button>
-        {hasFilters && <Button variant="ghost" onClick={clearFilters}><X className="w-4 h-4 mr-2" /> Clear</Button>}
-        <Button onClick={() => setShowAdd(true)}><Plus className="w-4 h-4 mr-2" /> Add Trade</Button>
       </div>
 
-      {/* Filter Row */}
+      <div className="rounded-2xl border border-border bg-card/40 p-3 sm:p-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { label: 'Trades', value: stats.total.toString(), tone: 'neutral' },
+              { label: 'Net P&L', value: formatCurrency(stats.netPnl), tone: stats.netPnl >= 0 ? 'success' : 'destructive' },
+              { label: 'Win rate', value: `${stats.winRate.toFixed(1)}%`, tone: 'neutral' },
+              { label: 'Avg R', value: `${stats.avgRr >= 0 ? '+' : ''}${stats.avgRr.toFixed(2)}R`, tone: stats.avgRr >= 0 ? 'success' : 'destructive' },
+            ].map((metric) => (
+              <div key={metric.label} className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary/30 px-2.5 py-1.5">
+                <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{metric.label}</span>
+                <span className={cn('text-sm font-semibold tabular-nums',
+                  metric.tone === 'success' && 'text-success',
+                  metric.tone === 'destructive' && 'text-destructive',
+                  metric.tone === 'neutral' && 'text-foreground'
+                )}>{metric.value}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {hasFilters ? `${filtered.length} trade${filtered.length === 1 ? '' : 's'} in view` : 'All active trades in this workspace'}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card/40 p-3 sm:p-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }} placeholder="Search instrument, notes, tags, ID..." className="pl-10 h-10 rounded-xl" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="h-10 rounded-xl"><Filter className="w-4 h-4 mr-2" /> Filters</Button>
+            {hasFilters && <Button variant="ghost" onClick={clearFilters} className="h-10 rounded-xl"><X className="w-4 h-4 mr-2" /> Clear</Button>}
+            <Button onClick={() => setShowAdd(true)} className="h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"><Plus className="w-4 h-4 mr-2" /> Add Trade</Button>
+          </div>
+        </div>
+      </div>
+
       {showFilters && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 p-3 rounded-lg border border-border bg-card/50">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 p-3 rounded-xl border border-border bg-card/40">
           <FilterSelect label="Direction" value={filters.direction || 'all'} onChange={(v) => setFilter('direction', v)} options={[{ value: 'all', label: 'All' }, ...DIRECTIONS.map((d) => ({ value: d, label: d }))]} />
           <FilterSelect label="Status" value={filters.status || 'all'} onChange={(v) => setFilter('status', v)} options={[{ value: 'all', label: 'All' }, ...STATUSES.map((s) => ({ value: s, label: s }))]} />
           <FilterSelect label="Session" value={filters.session || 'all'} onChange={(v) => setFilter('session', v)} options={[{ value: 'all', label: 'All' }, ...SESSIONS.map((s) => ({ value: s, label: s.replace('_', ' ') }))]} />
@@ -202,7 +234,7 @@ export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () 
                 </thead>
                 <tbody className="divide-y divide-border">
                   {paged.map((t) => (
-                    <tr key={t.id} className="hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setViewing(t)}>
+                    <tr key={t.id} className={cn('transition-colors cursor-pointer', viewing?.id === t.id ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-secondary/30')} onClick={() => setViewing(t)}>
                       <Td><span className="text-xs text-muted-foreground">{formatDate(t.executed_at)}</span></Td>
                       <Td><span className="font-semibold">{t.instrument}</span></Td>
                       <Td><Badge variant="outline" className={cn('text-[10px]', t.direction === 'long' ? 'text-success' : 'text-destructive')}>{t.direction === 'long' ? 'LONG' : 'SHORT'}</Badge></Td>
@@ -216,7 +248,7 @@ export function Journal({ trades, onMutated }: { trades: Trade[]; onMutated: () 
                       <Td><Badge variant={t.status === 'open' ? 'warning' : t.status === 'pending' ? 'secondary' : 'outline'} className="text-[10px] capitalize">{t.status}</Badge></Td>
                       <Td><span className="text-xs capitalize">{t.session ? t.session.replace('_', ' ') : '—'}</span></Td>
                       <Td>
-                        <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
                           <button onClick={() => setViewing(t)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Eye className="w-3.5 h-3.5" /></button>
                           <button onClick={() => setEditing(t)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
                           <button onClick={() => handleDuplicate(t)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Copy className="w-3.5 h-3.5" /></button>

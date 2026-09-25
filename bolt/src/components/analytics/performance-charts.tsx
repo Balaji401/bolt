@@ -53,6 +53,7 @@ export function PerformanceCharts({ metrics }: { metrics: Metrics }) {
     { name: 'Long', value: metrics.byDirection.long.trades, color: 'hsl(var(--chart-2))' },
     { name: 'Short', value: metrics.byDirection.short.trades, color: 'hsl(var(--chart-4))' },
   ].filter((d) => d.value > 0);
+  const rDistributionData = metrics.rDistribution.map((d) => ({ label: d.bucket, count: d.count, avgR: d.avgR }));
 
   return (
     <div className="space-y-6">
@@ -99,7 +100,7 @@ export function PerformanceCharts({ metrics }: { metrics: Metrics }) {
         </Card>
       </div>
 
-      {/* Profit Distribution + Trade Frequency */}
+      {/* Profit Distribution + R-Multiple Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader><div className="flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /><CardTitle className="text-sm">Profit Distribution</CardTitle></div></CardHeader>
@@ -110,6 +111,18 @@ export function PerformanceCharts({ metrics }: { metrics: Metrics }) {
           </CardContent>
         </Card>
         <Card>
+          <CardHeader><div className="flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /><CardTitle className="text-sm">R-Multiple Distribution</CardTitle></div></CardHeader>
+          <CardContent>
+            {rDistributionData.some((d) => d.count > 0) ? (
+              <BarChart data={rDistributionData} xKey="label" bars={[{ key: 'count', name: 'Trades', color: 'hsl(var(--chart-5))' }]} height={260} formatY={(v) => formatCompact(v)} />
+            ) : <div className="grid place-items-center h-[260px] text-sm text-muted-foreground">No data</div>}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Trade Frequency + Session */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
           <CardHeader><div className="flex items-center gap-2"><Layers className="w-4 h-4 text-primary" /><CardTitle className="text-sm">Trade Frequency</CardTitle></div></CardHeader>
           <CardContent>
             {metrics.dailyPnl.length > 0 ? (
@@ -117,10 +130,6 @@ export function PerformanceCharts({ metrics }: { metrics: Metrics }) {
             ) : <div className="grid place-items-center h-[260px] text-sm text-muted-foreground">No data</div>}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Session + Day of Week */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader><div className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /><CardTitle className="text-sm">Session Performance</CardTitle></div></CardHeader>
           <CardContent>
@@ -129,6 +138,10 @@ export function PerformanceCharts({ metrics }: { metrics: Metrics }) {
             ) : <div className="grid place-items-center h-[260px] text-sm text-muted-foreground">No data</div>}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Day of Week */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader><div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /><CardTitle className="text-sm">Day of Week Performance</CardTitle></div></CardHeader>
           <CardContent>
@@ -137,10 +150,6 @@ export function PerformanceCharts({ metrics }: { metrics: Metrics }) {
             ) : <div className="grid place-items-center h-[260px] text-sm text-muted-foreground">No data</div>}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Hour of Day + Instrument */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader><div className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /><CardTitle className="text-sm">Hour of Day Performance</CardTitle></div></CardHeader>
           <CardContent>
@@ -149,6 +158,10 @@ export function PerformanceCharts({ metrics }: { metrics: Metrics }) {
             ) : <div className="grid place-items-center h-[260px] text-sm text-muted-foreground">No data</div>}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Instrument */}
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader><div className="flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /><CardTitle className="text-sm">Instrument Performance (Top 10)</CardTitle></div></CardHeader>
           <CardContent>

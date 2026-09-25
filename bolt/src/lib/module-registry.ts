@@ -7,7 +7,7 @@ import {
 
 export type ModuleKey =
   | 'dashboard' | 'journal' | 'analytics' | 'risk' | 'coach' | 'chat'
-  | 'achievements' | 'plan' | 'psychology' | 'calendar' | 'news' | 'brokers'
+  | 'achievements' | 'plan' | 'psychology' | 'market_context' | 'calendar' | 'news' | 'brokers'
   | 'accounts'
   | 'strategy_intelligence' | 'decision_intelligence' | 'multi_account_intelligence'
   | 'prop_firms' | 'market_intelligence' | 'ai_intelligence' | 'strategy' | 'reports' | 'automation' | 'settings' | 'admin';
@@ -48,8 +48,9 @@ export const MODULES: ModuleMeta[] = [
   { key: 'plan', label: 'Trading Plan', icon: Target, group: 'Tools', visibility: 'all', meta: { title: 'Trading Plan', subtitle: 'Define your rules, follow your plan' }, keywords: ['plan', 'rules'] },
   { key: 'reports', label: 'Reports', icon: FileBarChart, group: 'Tools', visibility: 'all', meta: { title: 'Reports & Reviews', subtitle: 'Generate, export, and schedule trading reports' }, keywords: ['report', 'export', 'pdf', 'csv'] },
   { key: 'automation', label: 'Automation', icon: Zap, group: 'Tools', visibility: 'all', meta: { title: 'Automation & Notifications', subtitle: 'Create rules that trigger notifications and actions' }, keywords: ['automation', 'notification', 'alert', 'workflow', 'trigger'] },
-  { key: 'calendar', label: 'Economic Calendar', icon: CalendarDays, group: 'Tools', visibility: 'all', meta: { title: 'Economic Calendar', subtitle: 'Market-moving events at a glance' }, keywords: ['calendar', 'events'] },
-  { key: 'news', label: 'News Center', icon: Newspaper, group: 'Tools', visibility: 'all', meta: { title: 'News Center', subtitle: 'AI-curated financial news' }, keywords: ['news', 'headlines'] },
+  { key: 'market_context', label: 'Market Context', icon: CalendarDays, group: 'Tools', visibility: 'all', meta: { title: 'Market Context', subtitle: 'Economic events, news, sessions, and watchlist context' }, keywords: ['market', 'news', 'calendar', 'sessions'] },
+  { key: 'calendar', label: 'Economic Calendar', icon: CalendarDays, group: 'Tools', visibility: 'admin', meta: { title: 'Economic Calendar', subtitle: 'Market-moving events at a glance' }, keywords: ['calendar', 'events'] },
+  { key: 'news', label: 'News Center', icon: Newspaper, group: 'Tools', visibility: 'admin', meta: { title: 'News Center', subtitle: 'AI-curated financial news' }, keywords: ['news', 'headlines'] },
   { key: 'settings', label: 'Settings', icon: Settings, group: 'System', visibility: 'all', meta: { title: 'Settings', subtitle: 'Configure your TraderOS workspace' }, keywords: ['settings', 'config'] },
   { key: 'admin', label: 'Admin', icon: ShieldCheck, group: 'System', visibility: 'admin', meta: { title: 'Admin Panel', subtitle: 'System administration' }, keywords: ['admin'], comingSoon: true },
 ];

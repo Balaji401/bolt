@@ -1,7 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export function getSupabaseClientConfig() {
+  const url = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+  const isConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return {
+    url,
+    anonKey,
+    isConfigured: isConfigured && url !== 'https://placeholder.supabase.co' && anonKey !== 'placeholder-anon-key',
+  };
+}
+
+export const isSupabaseConfigured = getSupabaseClientConfig().isConfigured;
+
+const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseClientConfig();
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -762,7 +774,9 @@ export type Automation = {
 export type AutomationTriggerType =
   | 'trade_created' | 'trade_closed' | 'daily_loss_limit' | 'weekly_loss_limit'
   | 'drawdown_threshold' | 'journal_not_completed' | 'goal_deadline_approaching'
-  | 'habit_missed' | 'report_generated' | 'ai_review_completed'
+  | 'habit_missed' | 'market_event_approaching' | 'market_event_released'
+  | 'market_news_available' | 'market_session_opening' | 'market_session_closing'
+  | 'report_generated' | 'ai_review_completed'
   | 'schedule_daily' | 'schedule_weekly' | 'schedule_monthly' | 'schedule_specific';
 
 export type AutomationActionType =
@@ -795,7 +809,7 @@ export type NotificationRecord = {
   id: string;
   user_id: string;
   workspace_id: string | null;
-  category: 'risk' | 'trading' | 'journal' | 'goals' | 'reports' | 'ai' | 'system';
+  category: 'risk' | 'trading' | 'journal' | 'goals' | 'reports' | 'ai' | 'system' | 'market';
   priority: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
@@ -813,7 +827,7 @@ export type NotificationPreference = {
   id: string;
   user_id: string;
   workspace_id: string | null;
-  category: 'risk' | 'trading' | 'journal' | 'goals' | 'reports' | 'ai' | 'system';
+  category: 'risk' | 'trading' | 'journal' | 'goals' | 'reports' | 'ai' | 'system' | 'market';
   in_app_enabled: boolean;
   email_enabled: boolean;
   push_enabled: boolean;

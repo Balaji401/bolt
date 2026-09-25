@@ -4,7 +4,7 @@ import { MessageSquare, Plus, Send, Sparkles, Pin, Trash2, Search, Download, Edi
 import type { AiContext } from '@/lib/ai-context';
 import { contextToPrompt, CHAT_SUGGESTIONS } from '@/lib/ai-context';
 import type { AiChatMessage, AiConversation } from '@/lib/supabase';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClientConfig, supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -55,10 +55,12 @@ export function AiChat({ ctx, workspaceId }: { ctx: AiContext; workspaceId: stri
     setInput('');
     setLoading(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
-      const res = await fetch(url, {
+      const { url, anonKey, isConfigured } = getSupabaseClientConfig();
+      if (!isConfigured) throw new Error('Supabase environment is not configured');
+
+      const res = await fetch(`${url}/functions/v1/ai-chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || '', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}` },
+        headers: { 'Content-Type': 'application/json', apikey: anonKey, Authorization: `Bearer ${anonKey}` },
         body: JSON.stringify({ message: userMsg, contextPrompt: contextToPrompt(ctx), history: messages.slice(-10), session_id: sessionId }),
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);

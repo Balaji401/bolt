@@ -34,23 +34,28 @@ export function Topbar({ title, subtitle, active, onAdd, onShowPlans, onOpenChat
   const activeAccounts = accounts.filter((a) => a.status === 'active');
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="h-full px-4 lg:px-8 flex items-center gap-3">
-        <div className="flex-1 min-w-0">
+    <header className="sticky top-0 z-30 h-[68px] border-b border-white/10 bg-slate-950/75 backdrop-blur-xl shadow-[0_10px_30px_rgba(2,6,23,0.35)]">
+      <div className="flex h-full items-center gap-3 px-4 lg:px-6 xl:px-8">
+        <div className="min-w-0 flex-1">
           <Breadcrumbs active={active} className="mb-0.5 hidden sm:flex" />
-          <h1 className="text-lg font-semibold tracking-tight truncate">{title}</h1>
-          {subtitle && <p className="text-xs text-muted-foreground truncate hidden sm:block">{subtitle}</p>}
+          <h1 className="truncate text-[1.05rem] font-semibold tracking-[-0.03em] text-foreground md:text-[1.35rem]">{title}</h1>
+          {subtitle && <p className="hidden text-[11px] text-muted-foreground sm:block">{subtitle}</p>}
+        </div>
+
+        <div className="hidden xl:flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          NY Session Open
         </div>
 
         {/* Account switcher */}
         <div className="relative" ref={acctRef}>
-          <button onClick={() => setAcctOpen((v) => !v)} className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors max-w-[180px] sm:max-w-none" title="Switch trading account">
+          <button onClick={() => setAcctOpen((v) => !v)} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground max-w-[180px] sm:max-w-none" title="Switch trading account">
             <Wallet className="w-4 h-4 shrink-0" />
-            <div className="hidden sm:flex flex-col items-start leading-tight min-w-0">
-              <span className="text-xs font-medium text-foreground truncate max-w-[120px]">{activeAccount?.account_name || 'No account'}</span>
+            <div className="hidden min-w-0 flex-col items-start leading-tight sm:flex">
+              <span className="max-w-[120px] truncate text-xs font-medium text-foreground">{activeAccount?.account_name || 'No account'}</span>
               <span className="text-[9px] text-muted-foreground">{activeAccount?.platform || 'Select...'}</span>
             </div>
-            <ChevronDown className={cn('w-3 h-3 transition-transform shrink-0', acctOpen && 'rotate-180')} />
+            <ChevronDown className={cn('w-3 h-3 shrink-0 transition-transform', acctOpen && 'rotate-180')} />
           </button>
           {acctOpen && (
             <div className="absolute right-0 top-full mt-2 w-72 glass-strong rounded-xl border border-border shadow-xl z-50 animate-fade-in overflow-hidden">
@@ -83,10 +88,10 @@ export function Topbar({ title, subtitle, active, onAdd, onShowPlans, onOpenChat
           )}
         </div>
 
-        <button onClick={onOpenSearch} className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/60 border border-border w-64 hover:border-primary/40 transition-colors focus-within:border-primary/60 text-left">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-          <span className="text-sm text-muted-foreground flex-1">Search trades, instruments...</span>
-          <kbd className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 hidden lg:block">Ctrl K</kbd>
+        <button onClick={onOpenSearch} className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-secondary/60 px-3 py-2 text-left transition-colors hover:border-primary/40 focus-within:border-primary/60 w-[240px] xl:w-[280px]">
+          <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
+          <span className="flex-1 text-sm text-muted-foreground">Search trades, instruments...</span>
+          <kbd className="hidden rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground lg:block">Ctrl K</kbd>
         </button>
         <button onClick={onOpenSearch} className="md:hidden p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Search className="w-4 h-4" /></button>
         <div className="relative" ref={tzRef}>

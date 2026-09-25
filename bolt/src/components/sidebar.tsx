@@ -50,9 +50,9 @@ export function Sidebar({ active, onSelect, onShowPlans, onSignOut, profile, tie
   const recentModules = recent.map((k) => MODULES.find((m) => m.key === k)).filter((m) => m && m.key !== active) as ModuleMeta[];
 
   return (
-    <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-card/40 backdrop-blur-xl">
-      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border"><BrandLogo /></div>
-      <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-3 space-y-1">
+    <aside className="hidden lg:flex w-[248px] shrink-0 flex-col border-r border-white/10 bg-slate-950/75 backdrop-blur-xl shadow-[0_0_0_1px_rgba(56,189,248,0.08)]">
+      <div className="flex h-[68px] items-center gap-2.5 border-b border-white/10 bg-slate-950/80 px-4"><BrandLogo /></div>
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-3 scrollbar-thin">
         {favModules.length > 0 && (<div className="mb-3"><div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"><Star className="w-3 h-3 text-warning" /> Favorites</div><div className="space-y-0.5">{favModules.map((n) => (<NavButton key={n.key} meta={n} active={active === n.key} onSelect={onSelect} isFav={true} onToggleFav={toggleFavorite} />))}</div></div>)}
         {recentModules.length > 0 && (<div className="mb-3"><div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"><Clock className="w-3 h-3" /> Recent</div><div className="space-y-0.5">{recentModules.map((n) => (<NavButton key={n.key} meta={n} active={active === n.key} onSelect={onSelect} isFav={isFav(n.key)} onToggleFav={toggleFavorite} />))}</div></div>)}
         {MODULE_GROUPS.map((g) => {
@@ -62,12 +62,12 @@ export function Sidebar({ active, onSelect, onShowPlans, onSignOut, profile, tie
           return (<div key={g}><button onClick={() => toggleCollapse(g)} className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">{g}{isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}</button>{!isCollapsed && (<div className="space-y-0.5 mt-0.5">{groupModules.map((n) => (<NavButton key={n.key} meta={n} active={active === n.key} onSelect={onSelect} isFav={isFav(n.key)} onToggleFav={toggleFavorite} />))}</div>)}</div>);
         })}
       </nav>
-      <div className="border-t border-border p-3 space-y-2">
-        <button onClick={onShowPlans} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-primary/15 to-chart-4/15 border border-primary/30 text-xs font-medium hover:border-primary/50 transition-colors"><Crown className="w-3.5 h-3.5 text-warning" /><span className="flex-1 text-left">Upgrade plan</span><span className={cn('text-[10px] uppercase tracking-widest font-semibold', TIER_COLORS[tier])}>{tierLabel}</span><ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /></button>
-        <div className="glass rounded-lg p-3 flex items-center gap-3">
-          <div className="grid place-items-center w-9 h-9 rounded-full bg-gradient-to-br from-primary to-chart-4 text-primary-foreground text-sm font-semibold shrink-0">{initials}</div>
+      <div className="border-t border-white/10 p-3 space-y-2">
+        <button onClick={onShowPlans} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-cyan-500/15 via-sky-400/10 to-emerald-500/15 border border-cyan-400/30 text-xs font-medium hover:border-cyan-400/50 transition-colors"><Crown className="w-3.5 h-3.5 text-warning" /><span className="flex-1 text-left">Upgrade plan</span><span className={cn('text-[10px] uppercase tracking-widest font-semibold', TIER_COLORS[tier])}>{tierLabel}</span><ChevronRight className="w-3.5 h-3.5 text-muted-foreground" /></button>
+        <div className="rounded-xl border border-white/10 bg-slate-900/80 p-3 flex items-center gap-3">
+          <div className="grid place-items-center w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 text-slate-950 text-sm font-semibold shrink-0">{initials}</div>
           <div className="flex-1 min-w-0"><div className="text-sm font-medium truncate flex items-center gap-1"><User className="w-3 h-3 text-muted-foreground" />{profile?.display_name || 'Trader'}</div><div className={cn('text-xs flex items-center gap-1', TIER_COLORS[tier])}><Crown className="w-3 h-3" /> {tierLabel} plan</div></div>
-          <button onClick={onSignOut} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors" title="Sign out"><LogOut className="w-4 h-4" /></button>
+          <button onClick={onSignOut} className="p-1.5 rounded hover:bg-white/5 text-muted-foreground hover:text-destructive transition-colors" title="Sign out"><LogOut className="w-4 h-4" /></button>
         </div>
       </div>
     </aside>
@@ -78,8 +78,8 @@ function NavButton({ meta, active, onSelect, isFav, onToggleFav }: { meta: Modul
   const Icon = meta.icon;
   return (
     <div className="group relative">
-      <button onClick={() => onSelect(meta.key)} className={cn('group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 pr-8', active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60')}>
-        {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-primary" />}
+      <button onClick={() => onSelect(meta.key)} className={cn('group relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 pr-8', active ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-400/20' : 'text-slate-300 hover:text-white hover:bg-white/5')}>
+        {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r bg-cyan-400" />}
         <Icon className="w-4 h-4 shrink-0" />
         <span className="font-medium flex-1 text-left">{meta.label}</span>
         {meta.badge && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary uppercase tracking-wide">{meta.badge}</span>}

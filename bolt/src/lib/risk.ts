@@ -4,6 +4,7 @@ import { computeMetrics, type Metrics } from './analytics';
 export type RiskMetrics = {
   accountBalance: number;
   accountEquity: number;
+  peakEquity: number;
   dailyRiskUsed: number;
   weeklyRiskUsed: number;
   monthlyRiskUsed: number;
@@ -14,7 +15,7 @@ export type RiskMetrics = {
   currentDrawdown: number;
   recoveryProgress: number;
   safeRiskIndicator: 'safe' | 'warning' | 'danger';
-  drawdownSeries: { date: string; drawdown: number }[];
+  drawdownSeries: { date: string; drawdown: number; equity: number }[];
   recoveryDays: number;
   maxDrawdownDate: string | null;
   recoveryCompleteDate: string | null;
@@ -106,7 +107,7 @@ export function computeRiskMetrics(
     : 0;
 
   // Drawdown calculation from equity curve
-  const drawdownSeries: { date: string; drawdown: number }[] = [];
+  const drawdownSeries: { date: string; drawdown: number; equity: number }[] = [];
   let peak = 0;
   let maxDrawdown = 0;
   let maxDrawdownDate: string | null = null;
@@ -115,7 +116,7 @@ export function computeRiskMetrics(
   for (const point of m.equity) {
     if (point.cumulative > peak) peak = point.cumulative;
     const dd = peak > 0 ? ((point.cumulative - peak) / Math.abs(peak)) * 100 : 0;
-    drawdownSeries.push({ date: point.date, drawdown: dd });
+    drawdownSeries.push({ date: point.date, drawdown: dd, equity: point.cumulative });
     if (dd < maxDrawdown) {
       maxDrawdown = dd;
       maxDrawdownDate = point.date;
@@ -123,6 +124,8 @@ export function computeRiskMetrics(
   }
 
   const currentDrawdown = drawdownSeries.length > 0 ? drawdownSeries[drawdownSeries.length - 1].drawdown : 0;
+  const peakEquity = m.equity.length > 0 ? Math.max(...m.equity.map((point) => point.cumulative)) : accountBalance;
+  const currentEquity = m.equity.length > 0 ? m.equity[m.equity.length - 1].cumulative : accountBalance;
 
   // Recovery: find when drawdown returned to 0 after max drawdown
   if (maxDrawdownDate) {
@@ -242,7 +245,8 @@ export function computeRiskMetrics(
 
   return {
     accountBalance,
-    accountEquity: accountBalance + totalPnl,
+    accountEquity: currentEquity || accountBalance + totalPnl,
+    peakEquity,
     dailyRiskUsed,
     weeklyRiskUsed,
     monthlyRiskUsed,

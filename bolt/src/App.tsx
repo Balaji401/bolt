@@ -14,6 +14,7 @@ import { Achievements } from '@/components/modules/achievements';
 import { Plan } from '@/components/modules/plan';
 import { Psychology } from '@/components/modules/psychology';
 import { StrategyManagement } from '@/components/modules/strategy';
+import { MarketContext } from '@/components/modules/market-context';
 import { EconomicCalendar } from '@/components/modules/calendar';
 import { NewsCenter } from '@/components/modules/news';
 import { Brokers } from '@/components/modules/brokers';
@@ -109,6 +110,7 @@ function AppContent() {
       case 'plan':         return <Plan />;
       case 'psychology':   return <Psychology trades={trades} />;
       case 'strategy':     return <StrategyManagement trades={trades} />;
+      case 'market_context': return <MarketContext />;
       case 'calendar':     return <EconomicCalendar />;
       case 'news':         return <NewsCenter />;
       case 'brokers':      return <Brokers trades={trades} onTradesUpdated={load} />;
@@ -122,21 +124,27 @@ function AppContent() {
 
   return (
     <WorkspaceProvider>
-      <div className="flex min-h-screen">
+      <div className="app-shell flex min-h-screen trading-grid">
         <Sidebar active={active} onSelect={handleSelect} onShowPlans={() => {}} onSignOut={signOut} profile={profile} tier={tier} />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex min-w-0 flex-1 flex-col">
           <Topbar title={title} subtitle={subtitle} active={active} onOpenChat={() => handleSelect('ai_intelligence')} onOpenSearch={() => setShowCommand(true)} onAdd={active === 'journal' ? () => emit('journal:add-trade', undefined, 'page') : undefined} onNavigateAccounts={() => handleSelect('accounts')} />
-          <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8 overflow-x-hidden">
-            {loading ? (
-              <div className="grid place-items-center h-64"><div className="flex items-center gap-3 text-muted-foreground"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Loading your trading workspace…</div></div>
-            ) : loadError ? (
-              <div className="grid place-items-center h-64 text-center">
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">Failed to load your trading data.</p>
-                  <Button onClick={load} variant="outline" size="sm">Retry</Button>
+          <main className="flex-1 overflow-x-hidden px-4 py-5 pb-24 lg:px-6 xl:px-8 lg:py-6 lg:pb-8">
+            <div className="mx-auto w-full max-w-[1720px]">
+              {loading ? (
+                <div className="grid place-items-center h-64"><div className="flex items-center gap-3 text-muted-foreground"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Loading your trading workspace…</div></div>
+              ) : loadError ? (
+                <div className="grid place-items-center h-64 text-center">
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Failed to load your trading data.</p>
+                    <Button onClick={load} variant="outline" size="sm">Retry</Button>
+                  </div>
                 </div>
-              </div>
-            ) : renderModule()}
+              ) : (
+                <div className="market-glow rounded-xl border border-white/10 bg-slate-950/30 p-2 md:p-3">
+                  {renderModule()}
+                </div>
+              )}
+            </div>
           </main>
         </div>
         <MobileNav active={active} onSelect={handleSelect} />

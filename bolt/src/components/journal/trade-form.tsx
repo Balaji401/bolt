@@ -19,6 +19,7 @@ const SESSIONS = ['asia', 'london', 'new_york', 'sydney', 'other'] as const;
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1H', '4H', '1D', '1W'];
 const MARKETS = ['Forex', 'Crypto', 'Stocks', 'Futures', 'Options', 'Commodities', 'Indices'];
 const COMMON_MISTAKES = ['FOMO entry', 'Moved stop loss', 'Oversized position', 'Revenge trade', 'Early exit', 'Late entry', 'No stop loss', 'Ignored plan'];
+const COMMON_EMOTIONS = ['Calm', 'Confident', 'Anxious', 'Frustrated', 'Fearful', 'Disciplined', 'Overtrading', 'Euphoric'];
 
 type FormData = {
   instrument: string;
@@ -37,6 +38,7 @@ type FormData = {
   timeframe: string;
   setup_type: string;
   strategy_tags: string[];
+  emotions: string[];
   confidence: string;
   executed_at: string;
   closed_at: string;
@@ -67,6 +69,7 @@ export function TradeForm({ trade, onClose, onSaved }: { trade: Trade | null; on
     timeframe: trade?.timeframe || '',
     setup_type: trade?.setup_type || '',
     strategy_tags: trade?.strategy_tags || [],
+    emotions: trade?.emotions || [],
     confidence: trade?.confidence?.toString() || '',
     executed_at: trade?.executed_at ? toLocalInput(trade.executed_at) : '',
     closed_at: trade?.closed_at ? toLocalInput(trade.closed_at) : '',
@@ -111,6 +114,12 @@ export function TradeForm({ trade, onClose, onSaved }: { trade: Trade | null; on
     update('mistakes', (form.mistakes || []).includes(m)
       ? (form.mistakes || []).filter((x) => x !== m)
       : [...(form.mistakes || []), m]);
+  };
+
+  const toggleEmotion = (emotion: string) => {
+    update('emotions', (form.emotions || []).includes(emotion)
+      ? (form.emotions || []).filter((item) => item !== emotion)
+      : [...(form.emotions || []), emotion]);
   };
 
   const handleUpload = async (files: FileList | null) => {
@@ -172,6 +181,7 @@ export function TradeForm({ trade, onClose, onSaved }: { trade: Trade | null; on
       timeframe: form.timeframe || null,
       setup_type: form.setup_type || null,
       strategy_tags: form.strategy_tags,
+      emotions: form.emotions,
       confidence: form.confidence ? parseInt(form.confidence) : null,
       executed_at: form.executed_at ? new Date(form.executed_at).toISOString() : new Date().toISOString(),
       closed_at: form.closed_at ? new Date(form.closed_at).toISOString() : form.status === 'closed' ? new Date().toISOString() : null,
@@ -287,6 +297,20 @@ export function TradeForm({ trade, onClose, onSaved }: { trade: Trade | null; on
             </div>
           </div>
 
+          {/* Psychology */}
+          <Section title="Psychology">
+            <Field label="Confidence (0-100)"><Input type="number" value={form.confidence} onChange={(e) => update('confidence', e.target.value)} placeholder="75" /></Field>
+            <Field label="Emotions" className="col-span-2">
+              <div className="flex flex-wrap gap-1.5">
+                {COMMON_EMOTIONS.map((emotion) => (
+                  <button key={emotion} type="button" onClick={() => toggleEmotion(emotion)}>
+                    <Badge variant={(form.emotions || []).includes(emotion) ? 'default' : 'outline'} className="cursor-pointer hover:opacity-80">{emotion}</Badge>
+                  </button>
+                ))}
+              </div>
+            </Field>
+          </Section>
+
           {/* Notes */}
           <Section title="Notes">
             <Field label="Trade Notes" className="col-span-2"><textarea value={form.notes} onChange={(e) => update('notes', e.target.value)} placeholder="Trade rationale and observations..." rows={2} className="w-full rounded-lg border border-border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none" /></Field>
@@ -301,7 +325,7 @@ export function TradeForm({ trade, onClose, onSaved }: { trade: Trade | null; on
             <Label>Mistakes</Label>
             <div className="flex flex-wrap gap-1.5">
               {COMMON_MISTAKES.map((m) => (
-                <button key={m} onClick={() => toggleMistake(m)}>
+                <button key={m} type="button" onClick={() => toggleMistake(m)}>
                   <Badge variant={(form.mistakes || []).includes(m) ? 'destructive' : 'outline'} className="cursor-pointer hover:opacity-80">{m}</Badge>
                 </button>
               ))}

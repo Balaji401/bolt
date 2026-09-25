@@ -123,7 +123,7 @@ export function RiskManagement({ trades }: { trades: Trade[] }) {
 
   const renderWidget = (id: WidgetId) => {
     switch (id) {
-      case 'dashboard': return <RiskDashboard metrics={riskMetrics} />;
+      case 'dashboard': return <RiskDashboard metrics={riskMetrics} rules={rules} accountBalance={accountBalance} />;
       case 'alerts': return <RiskAlertsPanel metrics={riskMetrics} rules={rules} trades={filteredTrades} />;
       case 'calculator': return <RiskCalculator />;
       case 'drawdown': return <DrawdownAnalysis metrics={riskMetrics} />;
@@ -134,8 +134,20 @@ export function RiskManagement({ trades }: { trades: Trade[] }) {
     }
   };
 
-  if (trades.length === 0 && !activeAccount) {
-    return <EmptyState icon={Shield} title="Risk Management" description="Add a trading account and start logging trades to see risk analytics." />;
+  if (!activeAccount && trades.length === 0) {
+    return <EmptyState icon={Shield} title="Risk Management" description="Connect a trading account to start tracking account risk and drawdown." />;
+  }
+
+  if (activeAccount && filteredTrades.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Account connected</div>
+          <h2 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-foreground">Risk analytics will appear after your first trade.</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Start logging trades to build your account risk profile, drawdown history, and risk consistency view.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

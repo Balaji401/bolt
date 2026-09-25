@@ -4,7 +4,6 @@ import { TrendingUp } from 'lucide-react';
 import type { Metrics } from '@/lib/analytics';
 import { AreaChart } from '@/components/charts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatCompact } from '@/lib/format';
 
@@ -31,6 +30,11 @@ export function EquityCurve({ metrics }: { metrics: Metrics }) {
       pnl: p.pnl,
     }));
   }, [metrics.equity, range]);
+
+  const peakEquity = Math.max(...metrics.equity.map((p) => p.balance), 0);
+  const currentEquity = metrics.equity.length > 0 ? metrics.equity[metrics.equity.length - 1].balance : 0;
+  const maxDrawdown = metrics.maxDrawdown ?? 0;
+  const currentDrawdown = metrics.currentDrawdown ?? 0;
 
   const areas = mode === 'equity'
     ? [{ key: 'equity', name: 'Equity', color: 'hsl(var(--chart-1))' }]
@@ -65,6 +69,25 @@ export function EquityCurve({ metrics }: { metrics: Metrics }) {
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="rounded-lg border border-border bg-secondary/20 p-2.5">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Peak equity</div>
+            <div className="mt-1 text-sm font-semibold tabular-nums">{formatCompact(peakEquity)}</div>
+          </div>
+          <div className="rounded-lg border border-border bg-secondary/20 p-2.5">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Current equity</div>
+            <div className="mt-1 text-sm font-semibold tabular-nums">{formatCompact(currentEquity)}</div>
+          </div>
+          <div className="rounded-lg border border-border bg-secondary/20 p-2.5">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Max drawdown</div>
+            <div className="mt-1 text-sm font-semibold tabular-nums text-destructive">{maxDrawdown.toFixed(1)}%</div>
+          </div>
+          <div className="rounded-lg border border-border bg-secondary/20 p-2.5">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Current DD</div>
+            <div className="mt-1 text-sm font-semibold tabular-nums text-warning">{currentDrawdown.toFixed(1)}%</div>
+          </div>
+        </div>
+
         {data.length > 0 ? (
           <AreaChart data={data} xKey="date" areas={areas} height={300} formatY={(v) => formatCompact(v)} formatX={(v) => {
             const d = new Date(v);
@@ -73,9 +96,6 @@ export function EquityCurve({ metrics }: { metrics: Metrics }) {
         ) : (
           <div className="grid place-items-center h-[300px] text-sm text-muted-foreground">No equity data yet</div>
         )}
-        <div className="mt-2 text-[10px] text-muted-foreground/70 text-center">
-          Future: Drawdown overlay coming soon
-        </div>
       </CardContent>
     </Card>
   );

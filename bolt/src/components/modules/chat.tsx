@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, Sparkles } from 'lucide-react';
-import type { Trade } from '@/lib/supabase';
+import { getSupabaseClientConfig, type Trade } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -27,10 +27,12 @@ export function AiChat({ trades }: { trades: Trade[] }) {
     setInput('');
     setLoading(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
-      const res = await fetch(url, {
+      const { url, anonKey, isConfigured } = getSupabaseClientConfig();
+      if (!isConfigured) throw new Error('Supabase environment is not configured');
+
+      const res = await fetch(`${url}/functions/v1/ai-chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY || '', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}` },
+        headers: { 'Content-Type': 'application/json', apikey: anonKey, Authorization: `Bearer ${anonKey}` },
         body: JSON.stringify({ message: userMsg, trades: trades.slice(0, 50) }),
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
