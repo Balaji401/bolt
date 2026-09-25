@@ -23,13 +23,13 @@ export function TradeDetail({ trade, onClose, onEdit, onDuplicate, onArchive, on
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto scrollbar-thin">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <DialogTitle className="flex items-center gap-3">
-              <div className={cn('grid place-items-center w-11 h-11 rounded-xl border shadow-sm', isWin ? 'border-success/30 bg-success/10 text-success' : 'border-destructive/30 bg-destructive/10 text-destructive')}>
+          <div className="flex min-w-0 items-start justify-between gap-4">
+            <DialogTitle className="flex min-w-0 items-center gap-3">
+              <div className={cn('grid h-11 w-11 shrink-0 place-items-center rounded-xl border shadow-sm', isWin ? 'border-success/30 bg-success/10 text-success' : 'border-destructive/30 bg-destructive/10 text-destructive')}>
                 {trade.direction === 'long' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
               </div>
-              <div>
-                <div className="text-xl font-semibold tracking-[-0.03em] text-foreground">{trade.instrument}</div>
+              <div className="min-w-0">
+                <div className="truncate text-xl font-semibold tracking-[-0.03em] text-foreground">{trade.instrument}</div>
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground font-normal">
                   <span>{trade.direction.toUpperCase()}</span>
                   <span>•</span>
@@ -37,7 +37,7 @@ export function TradeDetail({ trade, onClose, onEdit, onDuplicate, onArchive, on
                 </div>
               </div>
             </DialogTitle>
-            <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
               <Button size="sm" variant="ghost" onClick={onEdit}><Edit3 className="w-3.5 h-3.5 mr-1" /> Edit</Button>
               <Button size="sm" variant="ghost" onClick={onDuplicate}><Copy className="w-3.5 h-3.5 mr-1" /> Duplicate</Button>
               <Button size="sm" variant="ghost" onClick={onArchive}><Archive className="w-3.5 h-3.5 mr-1" /> Archive</Button>

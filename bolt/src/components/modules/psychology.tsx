@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { HeartPulse, LayoutDashboard, BookOpen, ClipboardCheck, Heart, Shield, Target, Repeat, CalendarRange, CalendarDays, AlertTriangle, GitBranch, Sparkles } from 'lucide-react';
 import type { Trade, PsychologyLog } from '@/lib/supabase';
-import { supabase } from '@/lib/supabase';
+import { supabase, getSupabaseSchemaMessage, isMissingSupabaseTableError } from '@/lib/supabase';
 import { useWorkspace } from '@/components/workspace-provider';
 import { computePsychologyMetrics } from '@/lib/psychology';
 import { computeMetrics } from '@/lib/analytics';
@@ -44,13 +44,17 @@ export function Psychology({ trades }: { trades: Trade[] }) {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [psychLogs, setPsychLogs] = useState<PsychologyLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedTradeId, setSelectedTradeId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setError(false);
+    setErrorMessage(null);
     const { data, error } = await supabase.from('psychology_logs').select('*').order('log_date', { ascending: false }).limit(30);
-    if (error) { setError(true); setLoading(false); return; }
+    if (error) {
+      setErrorMessage(isMissingSupabaseTableError(error) ? getSupabaseSchemaMessage(error) : 'Failed to load psychology data.');
+      setLoading(false);
+      return;
+    }
     setPsychLogs((data || []) as PsychologyLog[]);
     setLoading(false);
   }, []);
@@ -63,10 +67,10 @@ export function Psychology({ trades }: { trades: Trade[] }) {
   }, [trades, psychLogs]);
 
   if (loading) return <LoadingState label="Loading psychology data..." />;
-  if (error) return (
+  if (errorMessage) return (
     <div className="grid place-items-center h-64 text-center">
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">Failed to load psychology data.</p>
+      <div className="space-y-3 max-w-md">
+        <p className="text-sm text-muted-foreground">{errorMessage}</p>
         <Button onClick={load} variant="outline" size="sm">Retry</Button>
       </div>
     </div>

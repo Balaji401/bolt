@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { supabase, type Workspace, type TradingAccount } from '@/lib/supabase';
+import { supabase, getSupabaseSchemaMessage, isMissingSupabaseTableError, type Workspace, type TradingAccount } from '@/lib/supabase';
 import { useAuth } from '@/components/auth-provider';
 
 type WorkspaceState = {
@@ -32,7 +32,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const loadWorkspace = useCallback(async (userId: string) => {
-    const { data: existing } = await supabase.from('workspaces').select('*').eq('user_id', userId).maybeSingle();
+    const { data: existing, error: existingErr } = await supabase.from('workspaces').select('*').eq('user_id', userId).maybeSingle();
+    if (existingErr && isMissingSupabaseTableError(existingErr)) {
+      setError(getSupabaseSchemaMessage(existingErr));
+      return null;
+    }
     if (existing) {
       setWorkspace(existing as Workspace);
       return existing as Workspace;
@@ -40,7 +44,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const { data: created, error: createErr } = await supabase.from('workspaces').insert({
       user_id: userId, name: 'Personal', workspace_type: 'personal', is_default: true,
     }).select().maybeSingle();
-    if (createErr) { setError('Failed to create workspace.'); return null; }
+    if (createErr) {
+      setError(isMissingSupabaseTableError(createErr) ? getSupabaseSchemaMessage(createErr) : 'Failed to create workspace.');
+      return null;
+    }
     setWorkspace(created as Workspace);
     return created as Workspace;
   }, []);
@@ -51,7 +58,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       .select('*')
       .eq('workspace_id', wsId)
       .order('created_at', { ascending: true });
-    if (loadErr) { setError('Failed to load trading accounts.'); return []; }
+    if (loadErr) {
+      if (isMissingSupabaseTableError(loadErr)) {
+        setError(getSupabaseSchemaMessage(loadErr));
+      } else {
+        setError('Failed to load trading accounts.');
+      }
+      return [];
+    }
     return (data || []) as TradingAccount[];
   }, []);
 

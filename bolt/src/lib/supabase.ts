@@ -13,6 +13,19 @@ export function getSupabaseClientConfig() {
 
 export const isSupabaseConfigured = getSupabaseClientConfig().isConfigured;
 
+export function isMissingSupabaseTableError(error: { code?: string; message?: string; status?: number } | null | undefined) {
+  if (!error) return false;
+  const message = `${error.message ?? ''} ${error.code ?? ''} ${error.status ?? ''}`.toLowerCase();
+  return error.status === 404 || error.code === 'PGRST301' || error.code === '42P01' || /does not exist|not found|relation .* does not exist/i.test(message);
+}
+
+export function getSupabaseSchemaMessage(error: { code?: string; message?: string; status?: number } | null | undefined) {
+  if (isMissingSupabaseTableError(error)) {
+    return 'The Supabase project schema is not deployed yet. Run the migration files under supabase/migrations or apply the schema in the Supabase SQL editor.';
+  }
+  return error?.message || 'Supabase request failed.';
+}
+
 const { url: supabaseUrl, anonKey: supabaseAnonKey } = getSupabaseClientConfig();
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
