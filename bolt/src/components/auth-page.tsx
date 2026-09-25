@@ -16,6 +16,12 @@ const FEATURES = [
   { icon: ShieldCheck, title: 'Risk Management', desc: 'Professional calculators for every position' },
 ];
 
+const AUTH_VALUE_PROPS = [
+  { title: 'Journal every trade', value: '12.4K', desc: 'Clean trade history with execution notes and context.' },
+  { title: 'Review the process', value: '+1.82R', desc: 'See your edge, drift, and decision quality over time.' },
+  { title: 'Protect your capital', value: '94%', desc: 'Stay close to risk limits before behavior turns costly.' },
+];
+
 const heroChartData = [
   { time: '08:00', value: 2300 },
   { time: '09:00', value: 2318 },
@@ -555,7 +561,45 @@ export function AuthPage() {
                 <span className="h-2 w-2 rounded-full bg-emerald-400" /> Live trader workflow
               </div>
             </div>
-            <div className="flex-1" />
+
+            <div className="flex flex-1 items-end pb-4 pt-8">
+              <div className="w-full space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/5 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-cyan-300">
+                  <span className="h-2 w-2 rounded-full bg-cyan-300" /> TraderOS workspace
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="max-w-md text-3xl font-black tracking-[-0.06em] text-white lg:text-4xl">
+                    Build a stronger process around every trade.
+                  </h3>
+                  <p className="max-w-lg text-base leading-7 text-slate-300">
+                    Track execution, review behavior, manage risk, and turn review into repeatable edge.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {AUTH_VALUE_PROPS.map((item) => (
+                    <div key={item.title} className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur-sm">
+                      <div className="text-[10px] uppercase tracking-[0.18em] text-slate-400">{item.title}</div>
+                      <div className="mt-3 text-2xl font-bold text-white">{item.value}</div>
+                      <p className="mt-2 text-xs leading-5 text-slate-300">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-300">What traders get</p>
+                      <p className="mt-2 text-lg font-semibold text-white">Journal, analytics, risk, and AI review in one place.</p>
+                    </div>
+                    <div className="hidden sm:flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -626,6 +670,16 @@ export function AuthPage() {
                   )}
                 </Button>
               </form>
+
+              <div className="mt-2 rounded-2xl border border-white/10 bg-slate-900/50 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">Secure workflow</p>
+                    <p className="mt-1 text-sm text-slate-200">Built for disciplined traders. Not signal spam.</p>
+                  </div>
+                  <ShieldCheck className="h-5 w-5 text-cyan-300" />
+                </div>
+              </div>
 
               <div className="flex flex-col items-center gap-3 text-base text-slate-300">
                 {mode === 'signin' && (
