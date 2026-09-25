@@ -1,29 +1,29 @@
 # TraderOS
 
-A structured trading workspace and AI-assisted market dashboard.
+TraderOS is a forex trading journal, analytics, psychology, and performance dashboard for traders and prop-firm challenge participants.
 
-## Project structure
+## What this project includes
 
-- `src/app` — application bootstrap and app-level composition
-- `src/components` — UI blocks and feature screens
-- `src/features` — logic grouped by feature/domain
-- `src/lib` — API and data-layer integration utilities
-- `src/shared` — shared helpers and generic utilities
-- `docs` — architecture and onboarding notes
+- Frontend app in `bolt/` with React, Vite, TypeScript, Tailwind, and shadcn/ui
+- Supabase-powered data layer for trading journals, risk, accounts, and AI modules
+- Python trading-agent utilities in `src/`
+- Project docs and migration files under `bolt/docs` and `supabase/`
 
-## Run locally
+## Run the frontend
 
 ```bash
+cd bolt
 npm install
 npm run dev
 ```
 
-## Build
+## Build the frontend
 
 ```bash
+cd bolt
 npm run build
 ```
 
 ## Notes
 
-This project expects a Supabase backend with the necessary environment variables configured (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+This project is intended for journaling, analytics, and psychology tracking. It does not include automated market execution or strategy signal generation.
