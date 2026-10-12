@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { TrendingUp, Mail, Lock, User, ArrowRight, ArrowLeft, Eye, EyeOff, Sparkles, BarChart3, ShieldCheck, Globe } from 'lucide-react';
