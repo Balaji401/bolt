@@ -14,6 +14,7 @@ import { Achievements } from '@/components/modules/achievements';
 import { Plan } from '@/components/modules/plan';
 import { Psychology } from '@/components/modules/psychology';
 import { StrategyManagement } from '@/components/modules/strategy';
+import { MarketContext } from '@/components/modules/market-context';
 import { EconomicCalendar } from '@/components/modules/calendar';
 import { NewsCenter } from '@/components/modules/news';
 import { Brokers } from '@/components/modules/brokers';
@@ -109,6 +110,7 @@ function AppContent() {
       case 'plan':         return <Plan />;
       case 'psychology':   return <Psychology trades={trades} />;
       case 'strategy':     return <StrategyManagement trades={trades} />;
+      case 'market_context': return <MarketContext />;
       case 'calendar':     return <EconomicCalendar />;
       case 'news':         return <NewsCenter />;
       case 'brokers':      return <Brokers trades={trades} onTradesUpdated={load} />;
