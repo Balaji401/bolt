@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Plus, Upload, MessageSquare, LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, CalendarDays, Newspaper, HeartPulse, Plug, Trophy, Target, Settings as SettingsIcon, Clock, ArrowRight, History, Wallet } from 'lucide-react';
+import { Search, Plus, Upload, MessageSquare, LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, CalendarDays, HeartPulse, Plug, Trophy, Target, Settings as SettingsIcon, Clock, ArrowRight, History, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { search, loadRecentSearches, saveRecentSearch, clearRecentSearches, highlightMatch, type SearchResult } from '@/lib/search';
 import { MODULES, type ModuleKey } from '@/lib/module-registry';
@@ -26,8 +26,7 @@ export function CommandPalette({ open, onClose, onNavigate, onNewTrade, onImport
     { id: 'risk', label: 'Go to Risk Management', icon: Calculator, action: () => { onNavigate('risk'); onClose(); } },
     { id: 'coach', label: 'Go to AI Coach', icon: Sparkles, action: () => { onNavigate('coach'); onClose(); } },
     { id: 'psychology', label: 'Go to Psychology', icon: HeartPulse, action: () => { onNavigate('psychology'); onClose(); } },
-    { id: 'calendar', label: 'Go to Calendar', icon: CalendarDays, action: () => { onNavigate('calendar'); onClose(); } },
-    { id: 'news', label: 'Go to News', icon: Newspaper, action: () => { onNavigate('news'); onClose(); } },
+    { id: 'market-context', label: 'Go to Market Context', icon: CalendarDays, action: () => { onNavigate('market_context'); onClose(); } },
     { id: 'brokers', label: 'Go to Broker Sync', icon: Plug, action: () => { onNavigate('brokers'); onClose(); } },
     { id: 'accounts', label: 'Go to Accounts', icon: Wallet, action: () => { onNavigate('accounts'); onClose(); } },
     { id: 'achievements', label: 'Go to Achievements', icon: Trophy, action: () => { onNavigate('achievements'); onClose(); } },

@@ -1,27 +1,8 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { Sidebar, MobileNav, type ModuleKey } from '@/components/sidebar';
 import { Topbar } from '@/components/topbar';
 import { CommandPalette } from '@/components/command-palette';
-import { Dashboard } from '@/components/modules/dashboard';
-import { Journal } from '@/components/modules/journal';
-import { Analytics } from '@/components/modules/analytics';
-import { RiskManagement } from '@/components/modules/risk';
-import { Coach } from '@/components/modules/coach';
-import { AiChat } from '@/components/modules/chat';
-import { AiIntelligence } from '@/components/modules/ai-intelligence';
-import { Achievements } from '@/components/modules/achievements';
-import { Plan } from '@/components/modules/plan';
-import { Psychology } from '@/components/modules/psychology';
-import { StrategyManagement } from '@/components/modules/strategy';
-import { MarketContext } from '@/components/modules/market-context';
-import { EconomicCalendar } from '@/components/modules/calendar';
-import { NewsCenter } from '@/components/modules/news';
-import { Brokers } from '@/components/modules/brokers';
-import { Accounts } from '@/components/modules/accounts';
-import { Settings } from '@/components/modules/settings';
-import { Reports } from '@/components/modules/reports';
-import { Automation } from '@/components/modules/automation';
 import { ComingSoon } from '@/components/modules/coming-soon';
 import { AuthPage } from '@/components/auth-page';
 import { AuthProvider, useAuth } from '@/components/auth-provider';
@@ -34,6 +15,35 @@ import { supabase, type Trade, type AiInsight, type OpenPosition, type TradingGo
 import { getModuleMeta } from '@/lib/module-registry';
 import { emit } from '@/lib/event-bus';
 import { logger } from '@/lib/logger';
+
+const Dashboard = lazy(() => import('@/components/modules/dashboard').then(m => ({ default: m.Dashboard })));
+const Journal = lazy(() => import('@/components/modules/journal').then(m => ({ default: m.Journal })));
+const Analytics = lazy(() => import('@/components/modules/analytics').then(m => ({ default: m.Analytics })));
+const RiskManagement = lazy(() => import('@/components/modules/risk').then(m => ({ default: m.RiskManagement })));
+const Coach = lazy(() => import('@/components/modules/coach').then(m => ({ default: m.Coach })));
+const AiChat = lazy(() => import('@/components/modules/chat').then(m => ({ default: m.AiChat })));
+const AiIntelligence = lazy(() => import('@/components/modules/ai-intelligence').then(m => ({ default: m.AiIntelligence })));
+const Achievements = lazy(() => import('@/components/modules/achievements').then(m => ({ default: m.Achievements })));
+const Plan = lazy(() => import('@/components/modules/plan').then(m => ({ default: m.Plan })));
+const Psychology = lazy(() => import('@/components/modules/psychology').then(m => ({ default: m.Psychology })));
+const StrategyManagement = lazy(() => import('@/components/modules/strategy').then(m => ({ default: m.StrategyManagement })));
+const MarketContext = lazy(() => import('@/components/modules/market-context').then(m => ({ default: m.MarketContext })));
+const Brokers = lazy(() => import('@/components/modules/brokers').then(m => ({ default: m.Brokers })));
+const Accounts = lazy(() => import('@/components/modules/accounts').then(m => ({ default: m.Accounts })));
+const Settings = lazy(() => import('@/components/modules/settings').then(m => ({ default: m.Settings })));
+const Reports = lazy(() => import('@/components/modules/reports').then(m => ({ default: m.Reports })));
+const Automation = lazy(() => import('@/components/modules/automation').then(m => ({ default: m.Automation })));
+
+function ModuleFallback() {
+  return (
+    <div className="grid place-items-center h-64">
+      <div className="flex items-center gap-3 text-muted-foreground">
+        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        Loading module…
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
   const { user, loading: authLoading, signOut, profile, subscription, refresh } = useAuth();
@@ -111,8 +121,6 @@ function AppContent() {
       case 'psychology':   return <Psychology trades={trades} />;
       case 'strategy':     return <StrategyManagement trades={trades} />;
       case 'market_context': return <MarketContext />;
-      case 'calendar':     return <EconomicCalendar />;
-      case 'news':         return <NewsCenter />;
       case 'brokers':      return <Brokers trades={trades} onTradesUpdated={load} />;
       case 'accounts':     return <Accounts />;
       case 'reports':      return <Reports trades={trades} />;
@@ -138,7 +146,11 @@ function AppContent() {
                   <Button onClick={load} variant="outline" size="sm">Retry</Button>
                 </div>
               </div>
-            ) : renderModule()}
+            ) : (
+              <Suspense fallback={<ModuleFallback />}>
+                {renderModule()}
+              </Suspense>
+            )}
           </main>
         </div>
         <MobileNav active={active} onSelect={handleSelect} />
