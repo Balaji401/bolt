@@ -71,6 +71,12 @@ function AppContent() {
         supabase.from('open_positions').select('*').order('opened_at', { ascending: false }),
         supabase.from('trading_goals').select('*').order('created_at', { ascending: false }),
       ]);
+      if (t.error || i.error || p.error || g.error) {
+        logger.error('DataLoader', t.error?.message || i.error?.message || p.error?.message || g.error?.message || 'Unknown error');
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
       setTrades((t.data || []) as Trade[]);
       setInsights((i.data || []) as AiInsight[]);
       setPositions((p.data || []) as OpenPosition[]);
