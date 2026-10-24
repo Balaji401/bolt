@@ -2,7 +2,7 @@ import {
   LayoutDashboard, BookOpen, BarChart3, Calculator, Sparkles, Target,
   CalendarDays, HeartPulse, Plug, MessageSquare, Trophy,
   Brain, Crosshair, Layers, Building2, LineChart, Settings, ShieldCheck,
-  Network, Wallet, FileBarChart, Zap, Bell, type LucideIcon,
+  Network, Wallet, FileBarChart, Zap, type LucideIcon,
 } from 'lucide-react';
 
 export type ModuleKey =
