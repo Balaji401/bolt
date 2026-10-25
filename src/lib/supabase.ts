@@ -233,6 +233,20 @@ export type Subscription = {
 
 export type PlanTier = 'free' | 'starter' | 'pro' | 'elite';
 
+export type ChecklistItem = {
+  id: string;
+  label: string;
+  checked: boolean;
+};
+
+export type DailyChecklist = {
+  id: string;
+  checklist_date: string;
+  items: ChecklistItem[];
+  created_at: string;
+  updated_at: string;
+};
+
 export type Workspace = {
   id: string;
   user_id: string;

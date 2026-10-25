@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/feedback/state';
 import { DashboardWidget } from '@/components/dashboard/widget';
+import { DailyChecklistWidget } from '@/components/dashboard/daily-checklist';
 import { useWorkspace } from '@/components/workspace-provider';
 import { useAuth } from '@/components/auth-provider';
 import { cn } from '@/lib/utils';
@@ -235,21 +236,7 @@ export function Dashboard({ trades, insights, positions, goals, onNavigate }: { 
           </div>
         </DashboardWidget>
 
-        <DashboardWidget title="Trading Checklist" description="Pre-trade discipline" icon={CheckCircle2}>
-          <div className="space-y-2">
-            {[
-              'Risk per trade defined',
-              'Trading plan followed',
-              'No revenge trades',
-              'Journal entries complete',
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm py-1">
-                <CheckCircle2 className={cn('w-4 h-4 shrink-0', i < 2 ? 'text-success' : 'text-muted-foreground/40')} />
-                <span className={cn(i < 2 ? 'text-foreground' : 'text-muted-foreground')}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </DashboardWidget>
+        <DailyChecklistWidget />
       </div>
     </div>
   );
