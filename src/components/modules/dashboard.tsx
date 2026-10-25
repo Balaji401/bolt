@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/feedback/state';
 import { DashboardWidget } from '@/components/dashboard/widget';
 import { DailyChecklistWidget } from '@/components/dashboard/daily-checklist';
+import { EquityCurveWidget } from '@/components/dashboard/equity-curve-widget';
 import { useWorkspace } from '@/components/workspace-provider';
 import { useAuth } from '@/components/auth-provider';
 import { cn } from '@/lib/utils';
@@ -169,8 +170,10 @@ export function Dashboard({ trades, insights, positions, goals, onNavigate }: { 
         </DashboardWidget>
       </div>
 
-      {/* Row 4: Open Positions + AI Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Row 4: Equity Curve + Open Positions + AI Insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <EquityCurveWidget metrics={metrics} onNavigate={onNavigate} />
+
         <DashboardWidget title="Open Positions" description="Live positions from broker sync" icon={Activity}>
           {openPositions.length > 0 ? (
             <div className="space-y-2">
