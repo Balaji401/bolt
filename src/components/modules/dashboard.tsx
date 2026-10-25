@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/feedback/state';
 import { DashboardWidget } from '@/components/dashboard/widget';
 import { DailyChecklistWidget } from '@/components/dashboard/daily-checklist';
 import { EquityCurveWidget } from '@/components/dashboard/equity-curve-widget';
+import { MarketSessionsWidget, EconomicCalendarWidget } from '@/components/dashboard/market-widgets';
 import { useWorkspace } from '@/components/workspace-provider';
 import { useAuth } from '@/components/auth-provider';
 import { cn } from '@/lib/utils';
@@ -214,30 +215,11 @@ export function Dashboard({ trades, insights, positions, goals, onNavigate }: { 
         </DashboardWidget>
       </div>
 
-      {/* Row 5: Market Overview (placeholder) + Economic Calendar (placeholder) + Trading Checklist */}
+      {/* Row 5: Economic Calendar + Market Sessions + Daily Checklist */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <DashboardWidget title="Market Overview" description="Coming soon" icon={LineChart} state="empty">
-          <div className="space-y-2">
-            {['EUR/USD', 'GBP/USD', 'XAU/USD'].map((sym) => (
-              <div key={sym} className="flex items-center justify-between text-sm py-1.5">
-                <span className="font-medium">{sym}</span>
-                <span className="text-muted-foreground text-xs">Market data coming soon</span>
-              </div>
-            ))}
-          </div>
-        </DashboardWidget>
+        <EconomicCalendarWidget onNavigate={onNavigate} />
 
-        <DashboardWidget title="Economic Calendar" description="Coming soon" icon={CalendarDays} state="empty">
-          <div className="space-y-2">
-            {['NFP Report', 'FOMC Minutes', 'CPI Data'].map((event) => (
-              <div key={event} className="flex items-center gap-2 text-sm py-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
-                <span className="font-medium">{event}</span>
-                <span className="text-muted-foreground text-xs ml-auto">Calendar coming soon</span>
-              </div>
-            ))}
-          </div>
-        </DashboardWidget>
+        <MarketSessionsWidget onNavigate={onNavigate} />
 
         <DailyChecklistWidget />
       </div>
