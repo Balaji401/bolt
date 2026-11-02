@@ -16,6 +16,7 @@ type AuthState = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, displayName?: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   signOutAllDevices: () => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -117,6 +118,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null };
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) return { error: friendlyAuthError(error) };
+    return { error: null };
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null); setSubscription(null); setSession(null); setUser(null);
@@ -176,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, profile, subscription, loading,
-      signIn, signUp, signOut, signOutAllDevices, resetPassword, changePassword, updateProfile, deleteAccount, refresh,
+      signIn, signUp, signInWithGoogle, signOut, signOutAllDevices, resetPassword, changePassword, updateProfile, deleteAccount, refresh,
     }}>
       {children}
     </AuthContext.Provider>
