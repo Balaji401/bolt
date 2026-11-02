@@ -3,6 +3,33 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+const missingVars = [
+  !import.meta.env.VITE_SUPABASE_URL && 'VITE_SUPABASE_URL',
+  !import.meta.env.VITE_SUPABASE_ANON_KEY && 'VITE_SUPABASE_ANON_KEY',
+].filter(Boolean) as string[];
+
+if (missingVars.length > 0) {
+  const overlay = document.createElement('div');
+  overlay.setAttribute('style', [
+    'position:fixed', 'inset:0', 'z-index:99999',
+    'display:flex', 'flex-direction:column', 'align-items:center', 'justify-content:center',
+    'gap:12px', 'padding:24px', 'text-align:center',
+    'font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif',
+    'background:#0b0f14', 'color:#e6edf3',
+  ].join(';'));
+  const title = document.createElement('h1');
+  title.textContent = 'TraderOS is not configured: missing settings';
+  title.setAttribute('style', 'font-size:20px;font-weight:600;margin:0');
+  const list = document.createElement('p');
+  list.textContent = `Missing: ${missingVars.join(', ')}`;
+  list.setAttribute('style', 'font-size:14px;margin:0;color:#9aa7b5');
+  overlay.appendChild(title);
+  overlay.appendChild(list);
+  document.body.innerHTML = '';
+  document.body.appendChild(overlay);
+  throw new Error(`TraderOS is not configured: missing ${missingVars.join(', ')}`);
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
