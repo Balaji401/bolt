@@ -4,25 +4,31 @@ TraderOS is a forex trading journal, analytics, psychology, and performance dash
 
 ## What this project includes
 
-- Frontend app in `bolt/` with React, Vite, TypeScript, Tailwind, and shadcn/ui
+- React, Vite, TypeScript, Tailwind, and shadcn/ui frontend at the repository root
 - Supabase-powered data layer for trading journals, risk, accounts, and AI modules
-- Python trading-agent utilities in `src/`
-- Project docs and migration files under `bolt/docs` and `supabase/`
+- Project documentation under `docs/`
+- Database migrations and Edge Functions under `supabase/`
 
-## Run the frontend
+## Run the app
+
+From the repository root:
 
 ```bash
-cd bolt
 npm install
 npm run dev
 ```
 
-## Build the frontend
+## Build the app
+
+From the repository root:
 
 ```bash
-cd bolt
 npm run build
 ```
+
+## Environment setup
+
+Copy `.env.example` to `.env` and fill in the two Supabase settings for the project.
 
 ## Notes
 
